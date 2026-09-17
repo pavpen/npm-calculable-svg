@@ -1,0 +1,11 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    viewBox="-215 -326 431 386"
+>
+    <title>The text 'The unfortunate label' with a calculated 'y' attribute</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
+    <g>
+        <text text-anchor="middle" attrExpr:y="{{ 0 - 42 - 13 }}" y="-55">The unfortunate label</text>
+    </g>
+</svg>

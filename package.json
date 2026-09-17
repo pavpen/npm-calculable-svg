@@ -1,0 +1,42 @@
+{
+  "name": "@pavpen.dev/calculable-svg-browser",
+  "description": "Allow limited template expressions that can calculate SVG element attributes from bounding boxes, etc.",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rslib build && rspack build && npm run copy-samples",
+    "copy-samples": "node -e \"require('fs').cpSync('./samples', './dist/samples', {recursive: true})\"",
+    "check": "biome check --write",
+    "dev": "rspack dev",
+    "format": "biome format --write",
+    "preview": "rspack preview",
+    "test:install": "playwright install --with-deps chromium",
+    "test": "rstest",
+    "test:watch": "rstest --watch"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./evaluate-for-current-document": "./dist/evaluate-for-current-document.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@playwright/test": "^1.63.0",
+    "@rslib/core": "^1.0.1",
+    "@rspack/cli": "^2.2.5",
+    "@rspack/core": "^2.2.5",
+    "@rspack/dev-server": "^2.2.1",
+    "@rstest/adapter-rspack": "^0.11.12",
+    "@rstest/browser": "^0.11.12",
+    "@rstest/core": "^0.11.12",
+    "@rstest/playwright": "^0.11.12",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "happy-dom": "^20.14.5",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@huggingface/jinja": "^0.5.10"
+  }
+}

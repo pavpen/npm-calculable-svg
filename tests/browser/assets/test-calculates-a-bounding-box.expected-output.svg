@@ -1,0 +1,31 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+      {{- Math.round(csvg.getConst('labelBBox').x) }}{{ ' ' }}
+      {{- Math.round(csvg.getConst('labelBBox').y) }}{{ ' ' }}
+      {{- Math.round(csvg.getConst('labelBBox').width) }}{{ ' ' }}
+      {{- Math.round(csvg.getConst('labelBBox').height) }}"
+    viewBox="-250 -51 500 65"
+>
+    <title>The text 'The unfortunate label' with a calculated bounding box</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;display=swap');
+        .label {
+            font-size: 48px;
+            font-family: "Noto Serif", serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+        }
+    </style>
+    <csvg:consts
+        constExpr:labelBBox="csvg.getElementByDocLocalId('label').getBBox()"
+    />
+    <text csvg:doc-local-id="label" class="label" text-anchor="middle">
+        The unfortunate label</text>
+</svg>

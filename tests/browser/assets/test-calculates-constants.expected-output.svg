@@ -1,0 +1,21 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+      {{- csvg.getConst('startX') }}{{ ' ' }}
+      {{- csvg.getConst('startY') }}{{ ' ' }}
+      {{- csvg.getConst('endX') - csvg.getConst('startX') }}{{ ' ' }}
+      {{- csvg.getConst('endY') - csvg.getConst('startY') }}"
+    viewBox="-1 -2 4 6"
+>
+    <title>Empty document with calculated attributes</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
+    <csvg:consts
+        constExpr:startX="-1"
+        constExpr:startY="-2"
+        constExpr:endX="3"
+        constExpr:endY="4"
+    />
+</svg>
