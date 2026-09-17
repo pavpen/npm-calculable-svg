@@ -1,0 +1,56 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+        {{- csvg.getConst('contentBBox').x - csvg.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').y - csvg.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').width + csvg.getConst('borderStrokeWidthPx') }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').height + csvg.getConst('borderStrokeWidthPx') }}"
+>
+    <title>The text 'Start' inside an octagonal border</title>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <style>
+        .label {
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #000;
+            stroke: #757575; 
+        }
+    </style>
+    <csvg:consts
+        constExpr:padding="10"
+        constExpr:fontSize="csvg.getUsedStyleDimensionsForId('label').fontSizePx"
+        constExpr:borderStrokeWidthPx="csvg.getUsedStyleDimensionsForId('border').strokeWidthPx"
+        constExpr:octagonSideLength="
+            Math.max(
+                (csvg.getElementByDocLocalId('label').getBBox().width
+                    - 2 * csvg.getConst('padding')
+                ) / (1 + 2 / Math.sqrt(2)),
+                csvg.getConst('fontSize')
+            )"
+        constExpr:octagonSlantedSideProjection="csvg.getConst('octagonSideLength') / Math.sqrt(2)"
+        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+    />
+    <g csvg:doc-local-id="content">
+        <!-- The octagon enclosing the label: -->
+        <path csvg:doc-local-id="border" class="border"
+            attrExpr:d="
+            {{- '' }}M1,{{ csvg.getConst('octagonSideLength') / 2 + csvg.getConst('padding') }}
+            {{- ' ' }}v{{ 0 - csvg.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ csvg.getConst('octagonSlantedSideProjection') }},{{ 0 - csvg.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{ csvg.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ csvg.getConst('octagonSlantedSideProjection') }},{{ csvg.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}v{{- csvg.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{- 0 - csvg.getConst('octagonSlantedSideProjection') }},{{ csvg.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{- 0 - csvg.getConst('octagonSideLength') }}
+            z"
+            stroke="#000" fill="none" />
+        <text csvg:doc-local-id="label" class="label"
+            attrExpr:x="{{ csvg.getConst('padding') }}"
+            attrExpr:y="{{ csvg.getConst('fontSize') / 2 }}"
+            text-anchor="start">
+            Start</text>
+    </g>
+</svg>

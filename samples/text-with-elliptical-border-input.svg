@@ -1,0 +1,73 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+        {{ csvg.getConst('contentBBox').x - csvg.getConst('borderStrokeWidthPx') / 2 }}
+        {{ csvg.getConst('contentBBox').y - csvg.getConst('borderStrokeWidthPx') / 2 }}
+        {{ csvg.getConst('contentBBox').width + csvg.getConst('borderStrokeWidthPx') }}
+        {{ csvg.getConst('contentBBox').height + csvg.getConst('borderStrokeWidthPx') }}"
+>
+    <!--
+        https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#options
+        are not stable, yet.  We manually calculate the stroke bounding box above.
+    -->
+    <title>The text 'The unfortunate label' inside an ellipse</title>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <style>
+        .label {
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #000000;
+            stroke: #757575;
+            padding-bottom: 48px;
+        }
+        .border {
+            stroke: #0400ac;
+            stroke-width: 18px;
+            fill: none;
+        }
+    </style>
+    <csvg:consts
+        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+        constExpr:labelWidth="
+            csvg.getElementByDocLocalId('label').getBBox().width +
+            csvg.getUsedStyleDimensionsForId('label').paddingLeftPx +
+            csvg.getUsedStyleDimensionsForId('label').paddingRightPx
+            "
+        constExpr:labelHeight="
+            csvg.getElementByDocLocalId('label').getBBox().height +
+            csvg.getUsedStyleDimensionsForId('label').paddingTopPx +
+            csvg.getUsedStyleDimensionsForId('label').paddingBottomPx
+            "
+        constExpr:labelMiddleY="
+            csvg.getElementByDocLocalId('label').getBBox().y +
+            csvg.getElementByDocLocalId('label').getBBox().height / 2
+            "
+        constExpr:semiVerticalAxis="
+            csvg.getConst('labelHeight') / 2 +
+            Math.max(
+                csvg.getUsedStyleDimensionsForId('label').paddingTopPx,
+                csvg.getUsedStyleDimensionsForId('label').paddingBottomPx
+            )"
+        constExpr:semiHorizontalAxis="
+            csvg.getConst('labelWidth') /
+            Math.sqrt(Math.abs(
+                4 -
+                (csvg.getConst('labelHeight') * csvg.getConst('labelHeight')) /
+                (csvg.getConst('semiVerticalAxis') * csvg.getConst('semiVerticalAxis'))
+            ))
+            "
+        constExpr:borderStrokeWidthPx="csvg.getUsedStyleDimensionsForId('border').strokeWidthPx"
+    />
+    <g csvg:doc-local-id="content">
+        <ellipse csvg:doc-local-id="border" class="border"
+            cx="0"
+            attrExpr:cy="{{ csvg.getConst('labelMiddleY') }}"
+            attrExpr:rx="{{ csvg.getConst('semiHorizontalAxis') }}"
+            attrExpr:ry="{{ csvg.getConst('semiVerticalAxis') }}" />
+        <text csvg:doc-local-id="label" class="label" text-anchor="middle">
+            The unfortunate label</text>
+    </g>
+</svg>

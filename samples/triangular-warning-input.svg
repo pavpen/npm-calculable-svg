@@ -1,0 +1,89 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+        {{ csvg.getElementByDocLocalId('content').getBBox().x -
+            csvg.getConst('outlineStrokeWidthPx') }}
+        {{ csvg.getElementByDocLocalId('content').getBBox().y -
+            csvg.getConst('outlineStrokeWidthPx') * 2 / Math.sqrt(3) }}
+        {{ csvg.getElementByDocLocalId('content').getBBox().width +
+            csvg.getConst('outlineStrokeWidthPx') * 2 }}
+        {{ csvg.getElementByDocLocalId('content').getBBox().height +
+            csvg.getConst('outlineStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
+>
+    <title>The title text 'Title', followed by subtitle text
+        'Beware of titles' inside an triangular warning-sign border</title>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <style>
+        .title {
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #000000;
+            stroke: #757575;
+            margin-bottom: 2px;
+        }
+        .subtitle {
+            font-size: 30px;
+            stroke-width: 0.5px;
+            fill: #000000;
+            stroke: #757575;
+            padding-left: 15px;
+            padding-right: 15px;
+            padding-bottom: 15px;
+        }
+        .outline {
+            stroke: #fc0004;
+            stroke-width: 30px;
+            stroke-linejoin: round;
+            fill: #ffffff;
+        }
+    </style>
+    <csvg:consts
+        constExpr:titleFontSizePx="csvg.getUsedStyleDimensionsForId('title').fontSizePx"
+        constExpr:titleMarginBottomPx="csvg.getUsedStyleDimensionsForId('title').marginBottomPx"
+        constExpr:subtitleFontSizePx="csvg.getUsedStyleDimensionsForId('subtitle').fontSizePx"
+        constExpr:elevationCoefficient="0.5"
+        constExpr:labelWidth="
+            csvg.getElementByDocLocalId('label').getBBox().width +
+            csvg.getUsedStyleDimensionsForId('subtitle').paddingLeftPx +
+            csvg.getUsedStyleDimensionsForId('subtitle').paddingRightPx
+            "
+        constExpr:labelHeight="
+            csvg.getElementByDocLocalId('label').getBBox().height +
+            csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx
+            "
+        constExpr:outlineSideLength="
+            csvg.getConst('labelWidth') / (1 - csvg.getConst('elevationCoefficient') / 2) +
+            csvg.getConst('labelHeight') * 2 / Math.sqrt(3)
+            "
+        constExpr:outlineHeight="csvg.getConst('outlineSideLength') * Math.sqrt(3) / 2"
+        constExpr:outlineStartY="csvg.getConst('subtitleFontSizePx')"
+        constExpr:outlineStrokeWidthPx="csvg.getUsedStyleDimensionsForId('outline').strokeWidthPx"
+    />
+    <g csvg:doc-local-id="content">
+        <!-- The octagon enclosing the label: -->
+        <path csvg:doc-local-id="outline"
+            class="outline"
+            attrExpr:d="
+            M{{ 0 - csvg.getConst('outlineSideLength') / 2 }},{{ csvg.getConst('outlineStartY') }}
+            L0,{{ csvg.getConst('outlineStartY') - csvg.getConst('outlineHeight') }}
+            L{{ csvg.getConst('outlineSideLength') / 2 }},{{ csvg.getConst('outlineStartY') }}
+            z"/>
+        <g csvg:doc-local-id="label">
+            <text csvg:doc-local-id="title" class="title"
+                attrExpr:y="{{
+                    0 - csvg.getConst('titleMarginBottomPx')
+                    - csvg.getConst('titleFontSizePx')
+                    - csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx
+                }}"
+                text-anchor="middle">
+                Title</text>
+            <text csvg:doc-local-id="subtitle" class="subtitle"
+                attrExpr:y="{{ 0 - csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx }}"
+                text-anchor="middle">
+                Beware of titles</text>
+        </g>
+    </g>
+</svg>
