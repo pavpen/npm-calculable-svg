@@ -8,6 +8,39 @@ export class CalculableSvgError extends Error {
   }
 }
 
+export class InvalidAttributeValue extends CalculableSvgError {
+  readonly name: string;
+  readonly namespace: string | undefined;
+  readonly value: string | null;
+  readonly allowedValues: Iterable<string | null>;
+
+  constructor({
+    name,
+    namespace,
+    value,
+    allowedValues,
+  }: {
+    name: string;
+    namespace: string | undefined;
+    value: string | null;
+    allowedValues: Iterable<string | null>;
+  }) {
+    const namespaceMessage = namespace
+      ? ` in XML namespace ${JSON.stringify(namespace)}`
+      : '';
+    super(
+      `Invalid value (${JSON.stringify(value)}) for attribute \
+${JSON.stringify(name)}${namespaceMessage}!  \
+Allowed values: ${JSON.stringify(allowedValues)}`,
+    );
+
+    this.name = name;
+    this.namespace = namespace;
+    this.value = value;
+    this.allowedValues = allowedValues;
+  }
+}
+
 export class AttributeNotFoundError extends CalculableSvgError {
   readonly attributeQualifiedName: string;
 
