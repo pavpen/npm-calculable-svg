@@ -199,6 +199,37 @@ Example:
 * Expressions, and their dependencies must form a Directed Acyclic Graph.
   (I.e., circular references are not allowed.)
 
+### Attribute `live-update`
+
+⚠️ Not all aspects of live updates may be implemented.
+
+* XML namespace: `"http://xmlns.pavpen.dev/calculable-svg/0.1"`
+
+Allows enabling, and disabling responding to Calculable SVG live updates, such
+as updates to an attribute expression, a constant expression, or style changes
+(which may affect expressions using, e.g., bounding boxes).
+
+⚠️ A document may not respond to live updates to a CSS used style (JavaScript
+[`getComputedStyle`](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle)).
+JavaScript doesn't seem to curently have a good way of observing used style
+updates, and processing all DOM mutations can add undesired overhead.
+
+* Default value: `true`.
+* Allowed value: `"true"`, `"false"`.
+
+Example:
+
+```svg
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    csvg:live-update="false"
+>
+    <title>An example Calculable SVG that responds to expression, and style live updates</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
+</svg>
+```
+
 ## Jinja Expression Built-ins
 
 ### Global Namespace
@@ -297,6 +328,11 @@ csvg.getUsedStyleDimensionsForId: (
 Returns the used style of element with
 [Attribute `doc-local-id`](#attribute-doc-local-id) `docLocalId`, or `null`,
 if no element with the given `doc-local-id` exists.
+
+⚠️ A document may not respond to live updates to a CSS used style (JavaScript
+[`getComputedStyle`](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle)).
+JavaScript doesn't seem to curently have a good way of observing used style
+updates, and processing all DOM mutations can add undesired overhead.
 
 * See
   [window.getComputedStyle() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle)
