@@ -8,14 +8,11 @@ import {
   InvalidExpressionError,
   UndefinedConstantError,
 } from './faults';
-import type {
-  JinjaEvaluationScope,
-  JinjaEvaluator,
-  JinjaInterpreterParameterValue,
-} from './jinja-evaluator';
+import type { JinjaEvaluationScope, JinjaEvaluator } from './jinja-evaluator';
 import { csvg_namespace } from './xml-names';
 import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
 
+// TODO(pavel.penev): Implement `getBBox` options with poly-fills.
 /**
  * See
  * <https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#options>.
@@ -35,9 +32,7 @@ export interface BBoxForEvaluation {
 }
 
 export interface CsvgElement {
-  readonly getBBox?: (
-    options?: GetBBoxOptions,
-  ) => BBoxForEvaluation | undefined;
+  readonly getBBox?: () => BBoxForEvaluation | undefined;
   readonly getBoundingClientRect?: () => BBoxForEvaluation | undefined;
   readonly getAttribute: (qualifiedName: string) => string | null;
 }
@@ -280,7 +275,12 @@ expression: ${JSON.stringify(expressionString)}`,
       `Setting ${calculateElementXPath(ownerElement)}/@${expressionSource.localName} to ${JSON.stringify(expressionValue)}`,
     );
 
-    ownerElement.setAttribute(expressionSource.localName, expressionValue);
+    // Avoid triggering `MutationObserver` updates:
+    if (
+      ownerElement.getAttribute(expressionSource.localName) !== expressionValue
+    ) {
+      ownerElement.setAttribute(expressionSource.localName, expressionValue);
+    }
 
     renderedAttributes.add(expressionSource);
   }
@@ -395,7 +395,7 @@ export const createJinjaGlobalScope = (
     element,
   ) => {
     const result: {
-      getBBox?: (options?: GetBBoxOptions) => BBoxForEvaluation | undefined;
+      getBBox?: () => BBoxForEvaluation | undefined;
       getBoundingClientRect?: () => BBoxForEvaluation | undefined;
       getAttribute: (qualifiedName: string) => string | null;
     } = {
@@ -414,15 +414,9 @@ export const createJinjaGlobalScope = (
     };
 
     if (element instanceof SVGGraphicsElement) {
-      result.getBBox = (options?: unknown) => {
-        const optionsValue: GetBBoxOptions =
-          evaluationState.jinjaEvaluator.interpreterParameterToJavaScriptValue(
-            options as JinjaInterpreterParameterValue,
-          ) as GetBBoxOptions;
-        console.log('options:', optionsValue);
-
+      result.getBBox = () => {
         evaluationState.renderElement(element);
-        return toDomRectForEvaluation(element.getBBox(optionsValue));
+        return toDomRectForEvaluation(element.getBBox());
       };
     }
     if (element instanceof SVGElement) {

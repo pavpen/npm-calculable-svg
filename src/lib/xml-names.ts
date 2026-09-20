@@ -11,4 +11,5 @@ export namespace csvg_namespace {
 
 export namespace csvg_attribute_names {
   export const docLocalId = 'doc-local-id';
+  export const liveUpdate = 'live-update';
 }
