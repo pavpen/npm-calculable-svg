@@ -21,7 +21,7 @@ Calculable SVG does the following to an SVG document:
   are fixed).  (This follows from the previous point, but we also want to make
   the process simpler to implement when possible.)
 
-## Referring to Document Elements
+## Calculable SVG Attributes
 
 ### Attribute `doc-local-id`
 
@@ -199,11 +199,11 @@ Example:
 * Expressions, and their dependencies must form a Directed Acyclic Graph.
   (I.e., circular references are not allowed.)
 
-### Jinja Expression Built-ins
+## Jinja Expression Built-ins
 
-#### Global Namespace
+### Global Namespace
 
-##### `NaN`
+#### `NaN`
 
 The floating-point not-a-number constant.
 
@@ -211,32 +211,32 @@ See
 [NaN in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN)
 for arithmetic behavior.
 
-##### `document`
+#### `document`
 
 Represents the SVG document as a [`CsvgDocument`](#csvgdocument).
 
-##### `parseFloat`
+#### `parseFloat`
 
 Converts a string to a floating-point number, or NaN, if parsing fails.
 
 See
 [parseFloat in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseFloat).
 
-##### `true`
+#### `true`
 
 The `true` boolean constant.
 
-##### `false`
+#### `false`
 
 The `false` boolean constant
 
-##### `null`
+#### `null`
 
 The `null` object constant.
 
 #### `csvg` Namespace
 
-##### `csvg.getConst()`
+#### `csvg.getConst()`
 
 Prototype:
 
@@ -250,7 +250,7 @@ constant `id` is an error.
 See [Constant Jinja Expression](#constant-jinja-expression) for defining
 constants.
 
-##### `csvg.getElementByDocLocalId()`
+#### `csvg.getElementByDocLocalId()`
 
 Prototype:
 
@@ -265,7 +265,7 @@ Returns the SVG element with
 Returns an instance of [CsvgElement](#csvgelement) or one of its subclasses, or
 `null`.
 
-##### `csvg.getUsedStyleDimensionsForId()`
+#### `csvg.getUsedStyleDimensionsForId()`
 
 Prototype:
 
@@ -303,36 +303,36 @@ if no element with the given `doc-local-id` exists.
   for the definitions of style 'used value', 'resolved value', and
   'computed value'.
 
-#### `Math` Namespace
+### `Math` Namespace
 
-##### `Math.abs`
+#### `Math.abs`
 
 See
 [Math.abs() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/abs).
 
-##### `Math.min`
+#### `Math.min`
 
 See
 [Math.min() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/min).
 
-##### `Math.max`
+#### `Math.max`
 
 See
 [Math.max() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max).
 
-##### `Math.round`
+#### `Math.round`
 
 See
 [Math.round() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round).
 
-##### `Math.sqrt`
+#### `Math.sqrt`
 
 See
 [Math.sqrt() in the Mozilla JavaScript documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/sqrt).
 
-#### `CsvgDocument`
+### `CsvgDocument`
 
-##### Method `getElementById: (id: string) => ElementForEvaluation | null`
+#### Method `getElementById: (id: string) => ElementForEvaluation | null`
 
 Returns the SVG element with the given SVG id, or `null`, if no element with
 the given ID exists in the document.
@@ -343,9 +343,9 @@ See
 Returns an instance of [CsvgElement](#csvgelement) or one of its subclasses,
 or `null`.
 
-#### `CsvgElement`
+### `CsvgElement`
 
-##### Method `getAttribute()`
+#### Method `getAttribute()`
 
 Prototype:
 
@@ -353,11 +353,11 @@ Prototype:
 getAttribute: (qualifiedName: string) => string | null
 ```
 
-##### `CsvgSvgElement`
+### `CsvgSvgElement`
 
 Extends: [CsvgElement](#csvgelement).
 
-##### Method `getBoundingClientRect()`
+#### Method `getBoundingClientRect()`
 
 Prototype:
 
@@ -365,14 +365,14 @@ Prototype:
 getBoundingClientRect?: () => BBoxForEvaluation | undefined
 ```
 
-##### `CsvgSvgGraphicsElement`
+### `CsvgSvgGraphicsElement`
 
 Extends: [CsvgSvgElement](#csvgsvgelement)
 
-##### Method `getBBox()`
+#### Method `getBBox()`
 
 Prototype:
 
 ```typescript
-getBBox: (options?: GetBBoxOptions) => BBoxForEvaluation | undefined
+getBBox: () => BBoxForEvaluation | undefined
 ```
