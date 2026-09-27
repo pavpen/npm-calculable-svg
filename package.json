@@ -5,10 +5,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "rslib build && rspack build && npm run copy-samples",
-    "copy-samples": "node -e \"require('fs').cpSync('./samples', './dist/samples', {recursive: true})\"",
+    "build": "rslib build && rspack build",
+    "build-test-preview": "npm run build && npm run clean-test-preview && npm run copy-lib && npm run copy-samples && npm run copy-test-cases && npm run copy-test-case-lib",
+    "clean-test-preview": "node -e \"require('fs').rmSync('./test-preview-dist', {recursive: true, force: true})\"",
+    "copy-lib": "node -e \"require('fs').cpSync('./dist', './test-preview-dist/', {recursive: true})\"",
+    "copy-samples": "node -e \"require('fs').cpSync('./samples', './test-preview-dist/samples', {recursive: true})\"",
+    "copy-test-cases": "node -e \"require('fs').cpSync('./tests/browser/assets', './test-preview-dist/tests/browser/assets', {recursive: true})\"",
+    "copy-test-case-lib": "node -e \"require('fs').cpSync('./dist/evaluate-for-current-document.js', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js')\"",
     "check": "biome check --write",
-    "dev": "rspack dev",
+    "test-preview": "rspack dev",
     "format": "biome format --write",
     "preview": "rspack preview",
     "test:install": "playwright install --with-deps chromium",
@@ -34,6 +39,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
+    "serve-index": "^1.9.2",
     "typescript": "^7.0.2"
   },
   "dependencies": {

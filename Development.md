@@ -25,12 +25,12 @@ sbx run cursor --name=cursor-npm-calculable-svg
 
 ## Get started
 
-### Start a development server
+### Preview samples, and browser tests from a development server
 
 The app will be available at <http://localhost:8080>.
 
 ```bash
-npm run dev
+npm run build-test-preview && npm run test-preview
 ```
 
 ### Build for production

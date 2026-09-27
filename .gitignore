@@ -4,8 +4,9 @@
 *.log*
 
 # Dist
-node_modules
-dist/
+/node_modules
+/dist/
+/test-preview-dist/
 
 # Profile
 .rspack-profile-*/
