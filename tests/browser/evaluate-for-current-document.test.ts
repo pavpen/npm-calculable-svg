@@ -28,6 +28,18 @@ const collectPageConsoleMessages: (
   });
 };
 
+/**
+ * Collect console messages from a Playwright browser page in an array
+ */
+const collectPageExceptions: (page: Page, outputContainer: Error[]) => void = (
+  page,
+  outputContainer,
+) => {
+  page.on('pageerror', (exception) => {
+    outputContainer.push(exception);
+  });
+};
+
 const consoleMessagesToString = (consoleMessages: ConsoleMessage[]) =>
   consoleMessages
     .map(
@@ -35,6 +47,21 @@ const consoleMessagesToString = (consoleMessages: ConsoleMessage[]) =>
         `[${m.location().lineNumber}:${m.location().column} ${m.type()} ${m.location().url}] ${m.text()}`,
     )
     .join('\n');
+
+const consoleExceptionToString = (consoleException: Error): string => {
+  const cause = consoleException.cause;
+  const causeMessage = cause
+    ? `\ncaused by ${consoleExceptionToString(cause as Error)}`
+    : '';
+  const stackMessage = consoleException.stack
+    ? `\n\n* Stack trace:\n${consoleException.stack}`
+    : '';
+
+  return `[Exception ${consoleException.name}] ${consoleException.message}${causeMessage}${stackMessage}`;
+};
+
+const consoleExceptionsToString = (consoleExceptions: Error[]): string =>
+  consoleExceptions.map(consoleExceptionToString).join('\n\n');
 
 describe('<script href="evaluate-for-current-document.js"/>', async () => {
   testWithTemporaryDirectory(
@@ -142,6 +169,8 @@ ${consoleMessagesToString(consoleMessages)}
       const pageUrl = `${baseUrl}/document.svg`;
       const consoleMessages: ConsoleMessage[] = [];
       collectPageConsoleMessages(page, consoleMessages);
+      const consoleExceptions: Error[] = [];
+      collectPageExceptions(page, consoleExceptions);
 
       // Act:
       await page.goto(pageUrl);
@@ -159,6 +188,9 @@ ${consoleMessagesToString(consoleMessages)}
       } catch (e) {
         console.log(
           `Console messages:\n${consoleMessagesToString(consoleMessages)}`,
+        );
+        console.log(
+          `Page exceptions:\n${consoleExceptionsToString(consoleExceptions)}`,
         );
         throw e;
       }
