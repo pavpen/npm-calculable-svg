@@ -18,7 +18,7 @@ export class PageDocumentEquivalenceToSource {
     expectedSource,
     actualSource,
     areEquivalent,
-  }: { expectedSource: string; actualSource: string; areEquivalent: boolean }) {
+  }: PageDocumentEquivalenceToSource) {
     this.expectedSource = expectedSource;
     this.actualSource = actualSource;
     this.areEquivalent = areEquivalent;
@@ -66,6 +66,7 @@ const parentToBeTrueHandler = (
   }
 ).toBeTrue;
 
+// Add a `PageDocumentEquivalenceToSource` predicate:
 expect.extend({
   toBeTrue(received: PageDocumentEquivalenceToSource) {
     if (received instanceof Promise) {

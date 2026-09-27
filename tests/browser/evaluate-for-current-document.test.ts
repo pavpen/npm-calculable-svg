@@ -93,6 +93,8 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
       const pageUrl = `${baseUrl}/document.svg`;
       const consoleMessages: ConsoleMessage[] = [];
       collectPageConsoleMessages(page, consoleMessages);
+      const consoleExceptions: Error[] = [];
+      collectPageExceptions(page, consoleExceptions);
 
       // Act:
       await page.goto(pageUrl);
@@ -107,10 +109,14 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
           ),
         ).toBeTrue();
         expect(consoleMessages).toHaveLength(0);
+        expect(consoleExceptions).toHaveLength(0);
       } catch (e) {
-        console.log(`Browser console messages:
-${consoleMessagesToString(consoleMessages)}
-`);
+        console.log(
+          `Browser console messages:\n${consoleMessagesToString(consoleMessages)}`,
+        );
+        console.log(
+          `Browser console exceptions:\n${consoleExceptionsToString(consoleExceptions)}`,
+        );
         throw e;
       }
     },
@@ -185,6 +191,7 @@ ${consoleMessagesToString(consoleMessages)}
           ),
         ).toBeTrue();
         expect(consoleMessages).toHaveLength(0);
+        expect(consoleExceptions).toHaveLength(0);
       } catch (e) {
         console.log(
           `Console messages:\n${consoleMessagesToString(consoleMessages)}`,
