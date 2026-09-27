@@ -11,7 +11,7 @@
     "copy-lib": "node -e \"require('fs').cpSync('./dist', './test-preview-dist/', {recursive: true})\"",
     "copy-samples": "node -e \"require('fs').cpSync('./samples', './test-preview-dist/samples', {recursive: true})\"",
     "copy-test-cases": "node -e \"require('fs').cpSync('./tests/browser/assets', './test-preview-dist/tests/browser/assets', {recursive: true})\"",
-    "copy-test-case-lib": "node -e \"require('fs').cpSync('./dist/evaluate-for-current-document.js', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js')\"",
+    "copy-test-case-lib": "node -e \"const fs = require('fs'); fs.cpSync('./dist/evaluate-for-current-document.js', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js'); fs.cpSync('./dist/evaluate-for-current-document.js.map', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js.map')\"",
     "check": "biome check --write",
     "test-preview": "rspack dev",
     "format": "biome format --write",

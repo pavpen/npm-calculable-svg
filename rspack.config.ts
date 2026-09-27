@@ -41,6 +41,7 @@ const evaluateForCurrentDocumentConfiguration: RspackOptions = {
     ],
   },
   plugins: [],
+  devtool: 'source-map',
   optimization: {
     minimizer: [
       new rspack.SwcJsMinimizerRspackPlugin({
@@ -62,6 +63,7 @@ const evaluateForCurrentDocumentDebugConfiguration: RspackOptions = {
     'evaluate-for-current-document-debug':
       './src/evaluate-for-current-document.ts',
   },
+  devtool: 'source-map',
   optimization: {
     minimizer: [
       new rspack.SwcJsMinimizerRspackPlugin({
