@@ -4,6 +4,10 @@ import {
   rspack,
   type SwcLoaderOptions,
 } from '@rspack/core';
+import path from 'node:path';
+import serveIndex from 'serve-index';
+
+const testPreviewDir = path.resolve(__dirname, 'test-preview-dist');
 
 const evaluateForCurrentDocumentConfiguration: RspackOptions = {
   entry: {
@@ -71,6 +75,21 @@ const evaluateForCurrentDocumentDebugConfiguration: RspackOptions = {
       }),
     ],
   },
+  devServer: {
+    setupMiddlewares: (middlewares) => {
+      middlewares.push({
+        name: 'serve-index',
+        // The same as `static.publicPath`
+        path: '/',
+        middleware: serveIndex(testPreviewDir, { icons: true }),
+      });
+
+      return middlewares;
+    },
+    static: [
+      { directory: testPreviewDir }
+    ]
+  }
 };
 
 export default defineConfig([
