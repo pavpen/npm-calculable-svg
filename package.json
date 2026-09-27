@@ -7,11 +7,13 @@
   "scripts": {
     "build": "rslib build && rspack build",
     "build-test-preview": "npm run build && npm run clean-test-preview && npm run copy-lib && npm run copy-samples && npm run copy-test-cases && npm run copy-test-case-lib",
+    "build-test-debug-preview": "npm run build && npm run clean-test-preview && npm run copy-lib && npm run copy-samples && npm run copy-test-cases && npm run copy-test-case-debug-lib",
     "clean-test-preview": "node -e \"require('fs').rmSync('./test-preview-dist', {recursive: true, force: true})\"",
     "copy-lib": "node -e \"require('fs').cpSync('./dist', './test-preview-dist/', {recursive: true})\"",
     "copy-samples": "node -e \"require('fs').cpSync('./samples', './test-preview-dist/samples', {recursive: true})\"",
     "copy-test-cases": "node -e \"require('fs').cpSync('./tests/browser/assets', './test-preview-dist/tests/browser/assets', {recursive: true})\"",
     "copy-test-case-lib": "node -e \"const fs = require('fs'); fs.cpSync('./dist/evaluate-for-current-document.js', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js'); fs.cpSync('./dist/evaluate-for-current-document.js.map', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js.map')\"",
+    "copy-test-case-debug-lib": "node -e \"const fs = require('fs'); fs.cpSync('./dist/evaluate-for-current-document-debug.js', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js'); fs.cpSync('./dist/evaluate-for-current-document-debug.js.map', './test-preview-dist/tests/browser/assets/evaluate-for-current-document.js.map')\"",
     "check": "biome check --write",
     "test-preview": "rspack dev",
     "format": "biome format --write",
