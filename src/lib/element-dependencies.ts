@@ -2,8 +2,14 @@ import { InternalInterpreterError } from './faults';
 import { calculateElementXPath } from './xpath-helpers';
 
 /**
- * Represents a tree similar to the DOM tree, but with elements which don't
- * have Calculable SVG attributes omitted
+ * Represents a tree similar to the DOM tree, but with elements not used by
+ * Calculable SVG omitted
+ *
+ * An element is not used by Calculable SVG, if all of the following apply:
+ * * It doesn't have any Calculable SVG attributes.
+ * * It's bounding box is not referenced by any Calculable SVG expression.
+ * * It's computed used style is not referenced by any Calculable SVG
+ *   expression (such as `csvg.getUsedStyleDimensionsForId(docLocalId)`).
  */
 export class ReferencedElement {
   closestAntecedent: ReferencedElement | null = null;
