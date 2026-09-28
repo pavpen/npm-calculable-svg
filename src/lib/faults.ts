@@ -12,32 +12,40 @@ export class InvalidAttributeValue extends CalculableSvgError {
   readonly name: string;
   readonly namespace: string | undefined;
   readonly value: string | null;
-  readonly allowedValues: Iterable<string | null>;
+  readonly allowedValues: Iterable<string | null> | undefined;
+  readonly allowedValuesDescirption: string | undefined;
 
   constructor({
     name,
     namespace,
     value,
     allowedValues,
+    allowedValuesDescription,
   }: {
     name: string;
     namespace: string | undefined;
     value: string | null;
-    allowedValues: Iterable<string | null>;
+    allowedValues?: Iterable<string | null> | undefined;
+    allowedValuesDescription?: string | undefined;
   }) {
     const namespaceMessage = namespace
       ? ` in XML namespace ${JSON.stringify(namespace)}`
       : '';
+    const allowedValuesMessage = `Allowed values: \
+${allowedValuesDescription ?? ''}\
+${allowedValuesDescription && allowedValues ? ': ' : ''}\
+${typeof allowedValues === 'undefined' ? '' : JSON.stringify(allowedValues)}`;
     super(
       `Invalid value (${JSON.stringify(value)}) for attribute \
 ${JSON.stringify(name)}${namespaceMessage}!  \
-Allowed values: ${JSON.stringify(allowedValues)}`,
+${allowedValuesMessage}`,
     );
 
     this.name = name;
     this.namespace = namespace;
     this.value = value;
     this.allowedValues = allowedValues;
+    this.allowedValuesDescirption = allowedValuesDescription;
   }
 }
 
