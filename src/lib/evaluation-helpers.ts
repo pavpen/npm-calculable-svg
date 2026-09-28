@@ -1,5 +1,6 @@
 import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import type { ElementDepedencyCalculator } from './element-dependency-calculator';
+import { ExpressionReverseDependencies } from './expression-reverse-dependencies';
 import {
   CircularAttributeSettingExpressionError,
   CircularConstantDefinitionError,
@@ -164,7 +165,7 @@ export const evaluateJinjaExpressionString = (
   return result;
 };
 
-export class PartialEvaluationState {
+export class EvaluationState {
   readonly documentEvaluationInformation: DocumentEvaluationInformation;
   readonly elementDependencyCalculator: ElementDepedencyCalculator;
   readonly disallowedDependencyAttributes: Set<Attr> = new Set();
@@ -186,6 +187,18 @@ export class PartialEvaluationState {
   readonly jinjaEvaluator: JinjaEvaluator;
   readonly csvgConstNameToValue: Map<string, unknown> = new Map();
   readonly disallowedConstantNames: Set<string> = new Set();
+  protected readonly expressionReverseDependencies: ExpressionReverseDependencies =
+    new ExpressionReverseDependencies();
+  jinjaGlobalScope: JinjaEvaluationScope;
+
+  /**
+   * The stack of expressions currently being evaluated
+   *
+   * Each element is either:
+   * * A constant name (string), on
+   * * An expression `Attr`
+   */
+  protected readonly expressionsUnderEvaluation: Array<string | Attr> = [];
 
   constructor({
     documentEvaluationInformation,
@@ -198,29 +211,168 @@ export class PartialEvaluationState {
     this.elementDependencyCalculator =
       documentEvaluationInformation.getElementDependencyCalculator();
     this.jinjaEvaluator = jinjaEvaluator;
+    this.jinjaGlobalScope = this.createJinjaGlobalScope();
   }
-}
 
-export class EvaluationState extends PartialEvaluationState {
-  globalScope: JinjaEvaluationScope;
+  private getCurrentExpressionUnderEvaluationOrThrow(): string | Attr {
+    const elementCount = this.expressionsUnderEvaluation.length;
 
-  constructor({
-    globalScope,
-    ...rest
-  }: {
-    documentEvaluationInformation: DocumentEvaluationInformation;
-    globalScope: JinjaEvaluationScope;
-    jinjaEvaluator: JinjaEvaluator;
-  }) {
-    super(rest);
-    this.globalScope = globalScope;
+    if (elementCount < 1) {
+      throw new InternalInterpreterError(
+        `The 'expressionsUnderEvaluation' is empty when we must be \
+evaluating an expression!`,
+      );
+    }
+    const result = this.expressionsUnderEvaluation[elementCount - 1];
+
+    return result;
+  }
+
+  private addCurrentExpressionDependencyOnSizeElement(
+    dependencyElement: Element,
+  ): void {
+    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+
+    switch (typeof expression) {
+      case 'string':
+        this.expressionReverseDependencies.addConstExpressionElementSizeDependency(
+          expression,
+          dependencyElement,
+        );
+        break;
+      case 'object':
+        this.expressionReverseDependencies.addAttributeExpressionElementSizeDependency(
+          expression,
+          dependencyElement,
+        );
+        break;
+      default:
+        throw new InternalInterpreterError(
+          `Unrecognized expression: ${expression}`,
+        );
+    }
+  }
+
+  private createJinjaGlobalScope(): JinjaEvaluationScope {
+    const { documentEvaluationInformation, jinjaEvaluator } = this;
+    const evaluationState = this;
+
+    const toElementForEvaluation: (element: Element) => CsvgElement = (
+      element,
+    ) => {
+      const result: {
+        getBBox?: () => BBoxForEvaluation | undefined;
+        getBoundingClientRect?: () => BBoxForEvaluation | undefined;
+        getAttribute: (qualifiedName: string) => string | null;
+      } = {
+        getAttribute: (qualifiedName: string) => {
+          if (!qualifiedName.includes(':')) {
+            const expressionAttribute = element.attributes.getNamedItemNS(
+              csvg_namespace.attributeExpression.jinja,
+              qualifiedName,
+            );
+            if (expressionAttribute !== null) {
+              evaluationState.renderAttributeExpression(expressionAttribute);
+            }
+          }
+          return element.getAttribute(qualifiedName);
+        },
+      };
+
+      if (element instanceof SVGGraphicsElement) {
+        result.getBBox = () => {
+          this.addCurrentExpressionDependencyOnSizeElement(element);
+          evaluationState.renderElement(element);
+          return toDomRectForEvaluation(element.getBBox());
+        };
+      }
+      if (element instanceof SVGElement) {
+        result.getBoundingClientRect = () => {
+          this.addCurrentExpressionDependencyOnSizeElement(element);
+          evaluationState.renderElement(element);
+          return toDomRectForEvaluation(element.getBoundingClientRect());
+        };
+      }
+
+      return Object.freeze(result);
+    };
+
+    /**
+     * The global `document` variable value when evaluating expressions
+     *
+     * We don't pass the browser `document` object, since we want to allow only
+     * limited operations from user expressions.  E.g., we don't want a user
+     * expression to add, or remove elements from the DOM.
+     */
+    const documentForEvaluation: CsvgDocument = Object.freeze({
+      getElementById: (elementId: string) => {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+          return element;
+        }
+
+        return toElementForEvaluation(element);
+      },
+    });
+
+    const csvg = {
+      getConst: (constName: string) =>
+        evaluationState.renderCsvgConst(constName),
+      getElementByDocLocalId: (docLocalId: string) => {
+        const element =
+          documentEvaluationInformation.getElementByDocLocalId(docLocalId);
+
+        if (!element) {
+          return null;
+        }
+
+        return toElementForEvaluation(element);
+      },
+      getUsedStyleDimensionsForId: (
+        docLocalId: string,
+        pseudoElementName: string | null = null,
+      ) => {
+        const element =
+          documentEvaluationInformation.getElementByDocLocalId(docLocalId);
+
+        if (!element) {
+          throw new InvalidExpressionError(
+            `Element with CSVG 'doc-local-id' ${JSON.stringify(docLocalId)} not found!`,
+          );
+        }
+
+        return toUsedStyleDimensionsForEvaluation(
+          window.getComputedStyle(element, pseudoElementName),
+        );
+      },
+    };
+
+    const globalScope = jinjaEvaluator.createGlobalScope({
+      Math: {
+        abs: Math.abs,
+        min: Math.min,
+        max: Math.max,
+        round: Math.round,
+        sqrt: Math.sqrt,
+      },
+      NaN: NaN,
+      csvg,
+      document: documentForEvaluation,
+      parseFloat: parseFloat,
+      true: true,
+      false: false,
+      null: null,
+    });
+
+    return globalScope;
   }
 
   renderAttributeExpression(expressionSource: Attr): void {
     const {
       disallowedDependencyAttributes,
       renderedAttributes,
-      globalScope,
+      jinjaGlobalScope,
       jinjaEvaluator,
     } = this;
     const expressionString = expressionSource.value;
@@ -248,18 +400,26 @@ export class EvaluationState extends PartialEvaluationState {
         dependencyChain: Array.from(disallowedDependencyAttributes.values()),
       });
     }
-    disallowedDependencyAttributes.add(expressionSource);
 
     console.debug(
       `Rendering attribute ${calculateAttrXPath(expressionSource)}.`,
     );
 
+    disallowedDependencyAttributes.add(expressionSource);
+    this.expressionsUnderEvaluation.push(expressionSource);
+
     const expressionValue = evaluateJinjaTemplateString(expressionString, {
       expressionSource,
-      globalScope,
+      globalScope: jinjaGlobalScope,
       jinjaEvaluator,
     });
 
+    if (this.expressionsUnderEvaluation.pop() !== expressionSource) {
+      throw new InternalInterpreterError(
+        `Currupt 'expressionsUnderEvaluationStack'!  Calling \
+'evaluateJinjaTemplate' resulted in a modified stack!`,
+      );
+    }
     disallowedDependencyAttributes.delete(expressionSource);
 
     const ownerElement = expressionSource.ownerElement;
@@ -352,6 +512,7 @@ expression: ${JSON.stringify(expressionString)}`,
       });
     }
     this.disallowedConstantNames.add(constName);
+    this.expressionsUnderEvaluation.push(constName);
 
     let expressionValue: unknown;
     try {
@@ -359,7 +520,7 @@ expression: ${JSON.stringify(expressionString)}`,
         expressionAttribute.value,
         {
           expressionSource: expressionAttribute,
-          globalScope: this.globalScope,
+          globalScope: this.jinjaGlobalScope,
           jinjaEvaluator: this.jinjaEvaluator,
         },
       );
@@ -376,126 +537,14 @@ expression: ${JSON.stringify(expressionString)}`,
 
     this.csvgConstNameToValue.set(constName, expressionValue);
 
+    if (this.expressionsUnderEvaluation.pop() !== constName) {
+      throw new InternalInterpreterError(
+        `Currupt 'expressionsUnderEvaluationStack'!  Calling \
+'evaluateJinjaExpressionString' resulted in a modified stack!`,
+      );
+    }
     this.disallowedConstantNames.delete(constName);
 
     return expressionValue;
   }
 }
-
-export const createJinjaGlobalScope = (
-  partialEvaluationState: PartialEvaluationState,
-) => {
-  const { documentEvaluationInformation, jinjaEvaluator } =
-    partialEvaluationState;
-  const evaluationState = new EvaluationState({
-    ...partialEvaluationState,
-  } as EvaluationState);
-
-  const toElementForEvaluation: (element: Element) => CsvgElement = (
-    element,
-  ) => {
-    const result: {
-      getBBox?: () => BBoxForEvaluation | undefined;
-      getBoundingClientRect?: () => BBoxForEvaluation | undefined;
-      getAttribute: (qualifiedName: string) => string | null;
-    } = {
-      getAttribute: (qualifiedName: string) => {
-        if (!qualifiedName.includes(':')) {
-          const expressionAttribute = element.attributes.getNamedItemNS(
-            csvg_namespace.attributeExpression.jinja,
-            qualifiedName,
-          );
-          if (expressionAttribute !== null) {
-            evaluationState.renderAttributeExpression(expressionAttribute);
-          }
-        }
-        return element.getAttribute(qualifiedName);
-      },
-    };
-
-    if (element instanceof SVGGraphicsElement) {
-      result.getBBox = () => {
-        evaluationState.renderElement(element);
-        return toDomRectForEvaluation(element.getBBox());
-      };
-    }
-    if (element instanceof SVGElement) {
-      result.getBoundingClientRect = () => {
-        evaluationState.renderElement(element);
-        return toDomRectForEvaluation(element.getBoundingClientRect());
-      };
-    }
-
-    return Object.freeze(result);
-  };
-
-  /**
-   * The global `document` variable value when evaluating expressions
-   *
-   * We don't pass the browser `document` object, since we want to allow only
-   * limited operations from user expressions.  E.g., we don't want a user
-   * expression to add, or remove elements from the DOM.
-   */
-  const documentForEvaluation: CsvgDocument = Object.freeze({
-    getElementById: (elementId: string) => {
-      const element = document.getElementById(elementId);
-
-      if (!element) {
-        return element;
-      }
-
-      return toElementForEvaluation(element);
-    },
-  });
-
-  const csvg = {
-    getConst: (constName: string) => evaluationState.renderCsvgConst(constName),
-    getElementByDocLocalId: (docLocalId: string) => {
-      const element =
-        documentEvaluationInformation.getElementByDocLocalId(docLocalId);
-
-      if (!element) {
-        return null;
-      }
-
-      return toElementForEvaluation(element);
-    },
-    getUsedStyleDimensionsForId: (
-      docLocalId: string,
-      pseudoElementName: string | null = null,
-    ) => {
-      const element =
-        documentEvaluationInformation.getElementByDocLocalId(docLocalId);
-
-      if (!element) {
-        throw new InvalidExpressionError(
-          `Element with CSVG 'doc-local-id' ${JSON.stringify(docLocalId)} not found!`,
-        );
-      }
-
-      return toUsedStyleDimensionsForEvaluation(
-        window.getComputedStyle(element, pseudoElementName),
-      );
-    },
-  };
-
-  const globalScope = jinjaEvaluator.createGlobalScope({
-    Math: {
-      abs: Math.abs,
-      min: Math.min,
-      max: Math.max,
-      round: Math.round,
-      sqrt: Math.sqrt,
-    },
-    NaN: NaN,
-    csvg,
-    document: documentForEvaluation,
-    parseFloat: parseFloat,
-    true: true,
-    false: false,
-    null: null,
-  });
-  evaluationState.globalScope = globalScope;
-
-  return globalScope;
-};
