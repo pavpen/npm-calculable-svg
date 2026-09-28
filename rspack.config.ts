@@ -88,10 +88,8 @@ const evaluateForCurrentDocumentDebugConfiguration: RspackOptions = {
 
       return middlewares;
     },
-    static: [
-      { directory: testPreviewDir }
-    ]
-  }
+    static: [{ directory: testPreviewDir }],
+  },
 };
 
 export default defineConfig([
