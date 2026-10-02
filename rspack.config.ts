@@ -64,6 +64,9 @@ const evaluateForCurrentDocumentDebugConfiguration: RspackOptions = {
       './src/evaluate-for-current-document.ts',
   },
   devtool: 'source-map',
+  output: {
+    publicPath: '',
+  },
   optimization: {
     minimizer: [
       new rspack.SwcJsMinimizerRspackPlugin({
@@ -82,7 +85,7 @@ const evaluateForCurrentDocumentDebugConfiguration: RspackOptions = {
       middlewares.push({
         name: 'serve-index',
         // The same as `static.publicPath`
-        path: '/',
+        path: '',
         middleware: serveIndex(testPreviewDir, { icons: true }),
       });
 
