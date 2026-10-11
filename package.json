@@ -39,6 +39,7 @@
     "@rstest/playwright": "^0.11.12",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
+    "fast-xml-parser": "^5.11.2",
     "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
     "serve-index": "^1.9.2",

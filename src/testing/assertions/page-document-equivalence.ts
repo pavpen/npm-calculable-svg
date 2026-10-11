@@ -1,5 +1,6 @@
 import { expect } from '@rstest/playwright';
 import type { Page } from 'playwright';
+import { diffXmlStrings } from '../diff-xml';
 
 /**
  * The result of testing whether a Playwright browser page's document is
@@ -114,6 +115,9 @@ ${expectedSource}
 
 Actual document source code:
 ${actualSource}
+
+Differences:
+${JSON.stringify(diffXmlStrings(expectedSource, actualSource).toJsValue(), null, 2)}
 `;
       },
       pass: isAssertionPassing,
