@@ -1,25 +1,20 @@
 import {
-  ElementDependencies,
+  DocumentReferencedElements,
   type ReferencedElement,
-} from './element-dependencies';
-import { ElementDepedencyCalculator } from './element-dependency-calculator';
+} from './document-referenced-elements';
 import { csvg_attribute_names, csvg_namespace } from './xml-names';
 import { calculateElementXPath } from './xpath-helpers';
 
 export class DocumentEvaluationInformation {
-  private readonly elementDependencies: ElementDependencies =
-    new ElementDependencies();
-  private readonly elementDependencyCalculator: ElementDepedencyCalculator =
-    new ElementDepedencyCalculator({
-      outputDependencies: this.elementDependencies,
-    });
+  readonly documentReferencedElements: DocumentReferencedElements =
+    new DocumentReferencedElements();
   private readonly docLocalIdToElement: Map<string, Element> = new Map();
   private readonly constNameToExpressionAttr: Map<string, Attr> = new Map();
 
   calculateForDocument(document: Document): void {
-    this.elementDependencies.clear();
+    this.documentReferencedElements.clear();
 
-    this.elementDependencyCalculator.processDocument(document);
+    this.documentReferencedElements.rebuildFromExpressionAttributes(document);
 
     this.docLocalIdToElement.clear();
 
@@ -70,15 +65,11 @@ new element: ${calculateElementXPath(element)}.`,
   }
 
   getReferencedElement(element: Element): ReferencedElement | undefined {
-    return this.elementDependencies.getReferencedElement(element);
+    return this.documentReferencedElements.getReferencedElement(element);
   }
 
   getRootReferencedElements(): Iterable<ReferencedElement> {
-    return this.elementDependencies.rootReferencedElements();
-  }
-
-  getElementDependencyCalculator(): ElementDepedencyCalculator {
-    return this.elementDependencyCalculator;
+    return this.documentReferencedElements.rootReferencedElements();
   }
 
   getConstExpressionAttr(constName: string): Attr | undefined {

@@ -123,7 +123,7 @@ See the [User Guide](doc/user-guide.md).
 
 ## To-Do
 
-* [ ] Respond to document live updates.
+* [x] Respond to document live updates. (Initial implementation.)
   * [ ] Minimizing recalculation by accurate dependency calculation.
         (Currently requires a different Jinja engine, or modifying the
         existing one.)

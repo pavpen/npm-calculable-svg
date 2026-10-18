@@ -3,5 +3,5 @@
   "compilerOptions": {
     // "types": ["@testing-library/jest-dom"],
   },
-  "include": ["./", "../src/testing/document-load.ts"]
+  "include": ["./"]
 }

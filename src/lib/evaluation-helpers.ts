@@ -1,6 +1,17 @@
+import {
+  ComparableCsvgDomRect as ComparableCsvgDomRect,
+  CsvgDomRect,
+} from './api/csvg-dom-rect';
+import {
+  ComparableCsvgUsedStyleDimensions,
+  CsvgUsedStyleDimensions,
+} from './api/csvg-used-style-dimensions';
 import type { DocumentEvaluationInformation } from './document-evaluation-information';
-import type { ElementDepedencyCalculator } from './element-dependency-calculator';
-import { ExpressionReverseDependencies } from './expression-reverse-dependencies';
+import {
+  ElementReverseDependencies,
+  UsedStyleDimensionsReverseDependencies,
+} from './reverse-dependencies/element-reverse-dependencies';
+import { ExpressionReverseDependencies } from './reverse-dependencies/expression-reverse-dependencies';
 import {
   CircularAttributeSettingExpressionError,
   CircularConstantDefinitionError,
@@ -12,29 +23,12 @@ import {
 import type { JinjaEvaluationScope, JinjaEvaluator } from './jinja-evaluator';
 import { csvg_namespace } from './xml-names';
 import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
-
-// TODO(pavel.penev): Implement `getBBox` options with poly-fills.
-/**
- * See
- * <https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#options>.
- */
-export interface GetBBoxOptions {
-  fill?: boolean;
-  stroke?: boolean;
-  markers?: boolean;
-  clipped?: boolean;
-}
-
-export interface BBoxForEvaluation {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
+import { DocumentReverseDependencies } from './reverse-dependencies/document-reverse-dependencies';
+import { InvalidatedCalculables } from './reverse-dependencies/invalidated-calculables';
 
 export interface CsvgElement {
-  readonly getBBox?: () => BBoxForEvaluation | undefined;
-  readonly getBoundingClientRect?: () => BBoxForEvaluation | undefined;
+  readonly getBBox?: () => CsvgDomRect | undefined;
+  readonly getBoundingClientRect?: () => CsvgDomRect | undefined;
   readonly getAttribute: (qualifiedName: string) => string | null;
 }
 
@@ -46,43 +40,6 @@ export interface CsvgForEvaluation {
   readonly consts: Record<string, unknown>;
   readonly getElementByDocLocalId: (docLocalId: string) => CsvgElement | null;
 }
-
-export const toDomRectForEvaluation = (domRect: DOMRect): BBoxForEvaluation =>
-  Object.freeze({
-    x: domRect.x,
-    y: domRect.y,
-    width: domRect.width,
-    height: domRect.height,
-  });
-
-const parseCssFloatProprty: (propertyValue: string) => number | string = (
-  propertyValue,
-) => {
-  const result = parseFloat(propertyValue);
-
-  return Number.isNaN(result) ? propertyValue : result;
-};
-
-export const toUsedStyleDimensionsForEvaluation = (style: CSSStyleProperties) =>
-  Object.freeze({
-    leftPx: parseCssFloatProprty(style.left),
-    rightPx: parseCssFloatProprty(style.right),
-    topPx: parseCssFloatProprty(style.top),
-    bottomPx: parseCssFloatProprty(style.bottom),
-    widthPx: parseCssFloatProprty(style.width),
-    heightPx: parseCssFloatProprty(style.height),
-    marginLeftPx: parseCssFloatProprty(style.marginLeft),
-    marginRightPx: parseCssFloatProprty(style.marginRight),
-    marginTopPx: parseCssFloatProprty(style.marginTop),
-    marginBottomPx: parseCssFloatProprty(style.marginBottom),
-    paddingLeftPx: parseCssFloatProprty(style.paddingLeft),
-    paddingRightPx: parseCssFloatProprty(style.paddingRight),
-    paddingTopPx: parseCssFloatProprty(style.paddingTop),
-    paddingBottomPx: parseCssFloatProprty(style.paddingBottom),
-    textIndentPx: parseCssFloatProprty(style.textIndent),
-    fontSizePx: parseCssFloatProprty(style.fontSize),
-    strokeWidthPx: parseCssFloatProprty(style.strokeWidth),
-  });
 
 /**
  * Replaces expressions like
@@ -100,7 +57,6 @@ export const evaluateJinjaTemplateString = (
   },
 ): string => {
   const { expressionSource, globalScope, jinjaEvaluator } = options;
-  console.debug(`Evaluating Jinja template: ${JSON.stringify(expression)}`);
 
   let result: string;
   try {
@@ -122,6 +78,11 @@ export const evaluateJinjaTemplateString = (
     });
   }
 
+  console.debug('Evaluated Jinja template.', {
+    expression,
+    value: result,
+  });
+
   return result;
 };
 
@@ -131,7 +92,7 @@ export const evaluateJinjaTemplateString = (
  *
  * @param expression to evaluate
  */
-export const evaluateJinjaExpressionString = (
+const evaluateJinjaExpressionString = (
   expression: string,
   options: {
     expressionSource: Attr;
@@ -140,7 +101,6 @@ export const evaluateJinjaExpressionString = (
   },
 ): unknown => {
   const { expressionSource, globalScope, jinjaEvaluator } = options;
-  console.debug(`Evaluating Jinja expression: ${JSON.stringify(expression)}`);
 
   let result: unknown;
   try {
@@ -162,13 +122,29 @@ export const evaluateJinjaExpressionString = (
     });
   }
 
+  console.debug('Evaluated Jinja expression.', {
+    expression,
+    value: result,
+  });
+
   return result;
 };
 
 export class EvaluationState {
   readonly documentEvaluationInformation: DocumentEvaluationInformation;
-  readonly elementDependencyCalculator: ElementDepedencyCalculator;
-  readonly disallowedDependencyAttributes: Set<Attr> = new Set();
+  readonly jinjaGlobalScope: JinjaEvaluationScope;
+  readonly jinjaEvaluator: JinjaEvaluator;
+  readonly reverseDependencies: DocumentReverseDependencies;
+
+  /**
+   * Expression attributes that are disallowed in subsequent expressions
+   *
+   * This is used to detect circular dependencies.  During the evaluation of
+   * an expression attribute, subsequent expressions are disallowed from
+   * requesting the value of this attribute.
+   */
+  readonly disallowedExpressionAttributes: Set<Attr> = new Set();
+
   readonly renderedAttributes: Set<Attr> = new Set();
 
   /**
@@ -184,12 +160,20 @@ export class EvaluationState {
   readonly attributesToSkip: Set<Attr> = new Set();
 
   readonly renderedElements: Set<Element> = new Set();
-  readonly jinjaEvaluator: JinjaEvaluator;
-  readonly csvgConstNameToValue: Map<string, unknown> = new Map();
-  readonly disallowedConstantNames: Set<string> = new Set();
-  protected readonly expressionReverseDependencies: ExpressionReverseDependencies =
-    new ExpressionReverseDependencies();
-  jinjaGlobalScope: JinjaEvaluationScope;
+
+  /**
+   * Cached values for already rendered constants
+   */
+  readonly constNameToValue: Map<string, unknown> = new Map();
+
+  /**
+   * Names of constants that are disallowed in subsequent expressions
+   *
+   * This is used to detect circular dependencies.  During the calculation of
+   * a constant subsequent expressions are disallowed from requesting the
+   * calculation of this constant.
+   */
+  readonly disallowedConstNames: Set<string> = new Set();
 
   /**
    * The stack of expressions currently being evaluated
@@ -208,10 +192,12 @@ export class EvaluationState {
     jinjaEvaluator: JinjaEvaluator;
   }) {
     this.documentEvaluationInformation = documentEvaluationInformation;
-    this.elementDependencyCalculator =
-      documentEvaluationInformation.getElementDependencyCalculator();
     this.jinjaEvaluator = jinjaEvaluator;
     this.jinjaGlobalScope = this.createJinjaGlobalScope();
+    this.reverseDependencies = new DocumentReverseDependencies({
+      documentReferencedElements:
+        documentEvaluationInformation.documentReferencedElements,
+    });
   }
 
   private getCurrentExpressionUnderEvaluationOrThrow(): string | Attr {
@@ -228,23 +214,187 @@ evaluating an expression!`,
     return result;
   }
 
-  private addCurrentExpressionDependencyOnSizeElement(
-    dependencyElement: Element,
+  private addCurrentExpressionDependencyOnBBox(
+    element: Element,
+    lastBBox: ComparableCsvgDomRect,
   ): void {
+    let slot =
+      this.reverseDependencies.elementToReverseDependencies.get(element);
+    if (typeof slot === 'undefined') {
+      slot = new ElementReverseDependencies();
+      slot.lastBBox = lastBBox;
+      this.reverseDependencies.elementToReverseDependencies.set(element, slot);
+    }
+
     const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
 
     switch (typeof expression) {
       case 'string':
-        this.expressionReverseDependencies.addConstExpressionElementSizeDependency(
-          expression,
-          dependencyElement,
-        );
+        slot.bboxReverseDependencies.addConstant(expression);
         break;
       case 'object':
-        this.expressionReverseDependencies.addAttributeExpressionElementSizeDependency(
-          expression,
-          dependencyElement,
+        slot.bboxReverseDependencies.addExpresionAttr(expression);
+        break;
+      default:
+        throw new InternalInterpreterError(
+          `Unrecognized expression: ${expression}`,
         );
+    }
+  }
+
+  private addCurrentExpressionDependencyOnBoundingClientRect(
+    element: Element,
+    lastBoundingClientRect: ComparableCsvgDomRect,
+  ): void {
+    let slot =
+      this.reverseDependencies.elementToReverseDependencies.get(element);
+    if (typeof slot === 'undefined') {
+      slot = new ElementReverseDependencies();
+      slot.lastBoundingClientRect = lastBoundingClientRect;
+      this.reverseDependencies.elementToReverseDependencies.set(element, slot);
+    }
+
+    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+
+    switch (typeof expression) {
+      case 'string':
+        slot.boundingClientRectReverseDependencies.addConstant(expression);
+        break;
+      case 'object':
+        slot.boundingClientRectReverseDependencies.addExpresionAttr(expression);
+        break;
+      default:
+        throw new InternalInterpreterError(
+          `Unrecognized expression: ${expression}`,
+        );
+    }
+  }
+
+  private addCurrentExpressionDependencyOnUsedStyleDimensions(
+    element: Element,
+    pseudoElementName: string,
+    lastUsedStyleDimensions: ComparableCsvgUsedStyleDimensions,
+  ): void {
+    let elementSlot =
+      this.reverseDependencies.elementToReverseDependencies.get(element);
+    if (typeof elementSlot === 'undefined') {
+      elementSlot = new ElementReverseDependencies();
+      this.reverseDependencies.elementToReverseDependencies.set(
+        element,
+        elementSlot,
+      );
+    }
+
+    let pseudoElementSlot =
+      elementSlot.pseudoElementNameToUsedStyleDimensionDependencies.get(
+        pseudoElementName,
+      );
+    if (typeof pseudoElementSlot === 'undefined') {
+      pseudoElementSlot = new UsedStyleDimensionsReverseDependencies(
+        lastUsedStyleDimensions,
+      );
+      elementSlot.pseudoElementNameToUsedStyleDimensionDependencies.set(
+        pseudoElementName,
+        pseudoElementSlot,
+      );
+    }
+
+    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+
+    switch (typeof expression) {
+      case 'string':
+        pseudoElementSlot.reverseDependencies.addConstant(expression);
+        break;
+      case 'object':
+        pseudoElementSlot.reverseDependencies.addExpresionAttr(expression);
+        break;
+      default:
+        throw new InternalInterpreterError(
+          `Unrecognized expression: ${expression}`,
+        );
+    }
+  }
+
+  private addLastExpressionDependencyOnConst(
+    constName: string,
+    expressionString: string,
+  ): void {
+    let slot =
+      this.reverseDependencies.constNameToReverseDependencies.get(constName);
+
+    if (typeof slot === 'undefined') {
+      slot = new ExpressionReverseDependencies(expressionString);
+      this.reverseDependencies.constNameToReverseDependencies.set(
+        constName,
+        slot,
+      );
+    } else {
+      if (slot.lastExpressionString !== expressionString) {
+        throw new InternalInterpreterError(
+          `Expression string for csvgConst changed during \
+document evaluation!  Constant name: ${JSON.stringify(constName)} \
+previous expresison string: ${JSON.stringify(slot.lastExpressionString)}, \
+current expression string: ${JSON.stringify(expressionString)}.`,
+        );
+      }
+    }
+
+    const expression = this.expressionsUnderEvaluation.at(-1);
+
+    switch (typeof expression) {
+      case 'string':
+        slot.reverseDependencies.addConstant(expression);
+        break;
+      case 'object':
+        slot.reverseDependencies.addExpresionAttr(expression);
+        break;
+      case 'undefined':
+        // A top-level expression call has no reverse dependencies.
+        break;
+      default:
+        throw new InternalInterpreterError(
+          `Unrecognized expression: ${expression}`,
+        );
+    }
+  }
+
+  private addLastExpressionDependencyOnExpressionAttribute(
+    expressionAttribute: Attr,
+    expressionString: string,
+  ): void {
+    let slot =
+      this.reverseDependencies.attributeToReverseDependencies.get(
+        expressionAttribute,
+      );
+
+    if (typeof slot === 'undefined') {
+      slot = new ExpressionReverseDependencies(expressionString);
+      this.reverseDependencies.attributeToReverseDependencies.set(
+        expressionAttribute,
+        slot,
+      );
+    } else {
+      if (slot.lastExpressionString !== expressionString) {
+        throw new InternalInterpreterError(
+          `Expression string for Attribute Expression changed during \
+document evaluation!  Attribute: ${calculateAttrXPath(expressionAttribute)} \
+previous expresison string: ${JSON.stringify(slot.lastExpressionString)}, \
+current expression string: ${JSON.stringify(expressionString)}.`,
+        );
+      }
+    }
+
+    const expression = this.expressionsUnderEvaluation.at(-1);
+
+    switch (typeof expression) {
+      case 'string':
+        slot.reverseDependencies.addConstant(expression);
+        break;
+      case 'object':
+        slot.reverseDependencies.addExpresionAttr(expression);
+        break;
+      case 'undefined':
+        // A top-level expression call has no reverse dependencies.
         break;
       default:
         throw new InternalInterpreterError(
@@ -261,8 +411,8 @@ evaluating an expression!`,
       element,
     ) => {
       const result: {
-        getBBox?: () => BBoxForEvaluation | undefined;
-        getBoundingClientRect?: () => BBoxForEvaluation | undefined;
+        getBBox?: () => CsvgDomRect | undefined;
+        getBoundingClientRect?: () => CsvgDomRect | undefined;
         getAttribute: (qualifiedName: string) => string | null;
       } = {
         getAttribute: (qualifiedName: string) => {
@@ -281,16 +431,23 @@ evaluating an expression!`,
 
       if (element instanceof SVGGraphicsElement) {
         result.getBBox = () => {
-          this.addCurrentExpressionDependencyOnSizeElement(element);
           evaluationState.renderElement(element);
-          return toDomRectForEvaluation(element.getBBox());
+          const result = new ComparableCsvgDomRect(element.getBBox());
+          evaluationState.addCurrentExpressionDependencyOnBBox(element, result);
+          return result;
         };
       }
-      if (element instanceof SVGElement) {
+      if (element instanceof Element) {
         result.getBoundingClientRect = () => {
-          this.addCurrentExpressionDependencyOnSizeElement(element);
           evaluationState.renderElement(element);
-          return toDomRectForEvaluation(element.getBoundingClientRect());
+          const result = new ComparableCsvgDomRect(
+            element.getBoundingClientRect(),
+          );
+          evaluationState.addCurrentExpressionDependencyOnBoundingClientRect(
+            element,
+            result,
+          );
+          return result;
         };
       }
 
@@ -317,9 +474,8 @@ evaluating an expression!`,
     });
 
     const csvg = {
-      getConst: (constName: string) =>
-        evaluationState.renderCsvgConst(constName),
-      getElementByDocLocalId: (docLocalId: string) => {
+      getConst: (constName: string) => evaluationState.renderConst(constName),
+      getElementByDocLocalId: (docLocalId: string): CsvgElement | null => {
         const element =
           documentEvaluationInformation.getElementByDocLocalId(docLocalId);
 
@@ -332,7 +488,7 @@ evaluating an expression!`,
       getUsedStyleDimensionsForId: (
         docLocalId: string,
         pseudoElementName: string | null = null,
-      ) => {
+      ): CsvgUsedStyleDimensions => {
         const element =
           documentEvaluationInformation.getElementByDocLocalId(docLocalId);
 
@@ -342,9 +498,15 @@ evaluating an expression!`,
           );
         }
 
-        return toUsedStyleDimensionsForEvaluation(
+        const result = new ComparableCsvgUsedStyleDimensions(
           window.getComputedStyle(element, pseudoElementName),
         );
+        evaluationState.addCurrentExpressionDependencyOnUsedStyleDimensions(
+          element,
+          pseudoElementName ?? '',
+          result,
+        );
+        return result;
       },
     };
 
@@ -368,9 +530,16 @@ evaluating an expression!`,
     return globalScope;
   }
 
+  invalidateAttributeExpression(expressionSource: Attr): void {
+    this.renderedAttributes.delete(expressionSource);
+    this.reverseDependencies.attributeToReverseDependencies.delete(
+      expressionSource,
+    );
+  }
+
   renderAttributeExpression(expressionSource: Attr): void {
     const {
-      disallowedDependencyAttributes,
+      disallowedExpressionAttributes,
       renderedAttributes,
       jinjaGlobalScope,
       jinjaEvaluator,
@@ -378,8 +547,7 @@ evaluating an expression!`,
     const expressionString = expressionSource.value;
     if (expressionString === null) {
       console.debug(
-        `Rendering attribute ${calculateAttrXPath(expressionSource)}: \
-  Skipping null attribute value!`,
+        `Skipping null expression attribute: ${calculateAttrXPath(expressionSource)}`,
       );
 
       return;
@@ -387,25 +555,26 @@ evaluating an expression!`,
 
     if (renderedAttributes.has(expressionSource)) {
       console.debug(
-        `Skipping already-rendered attribute ${calculateAttrXPath(expressionSource)}.`,
+        `Skipping already-rendered attribute: ${calculateAttrXPath(expressionSource)}`,
       );
 
       return;
     }
 
-    if (disallowedDependencyAttributes.has(expressionSource)) {
+    if (disallowedExpressionAttributes.has(expressionSource)) {
       throw new CircularAttributeSettingExpressionError({
         expressionString,
         expressionDefinitionAttribute: expressionSource,
-        dependencyChain: Array.from(disallowedDependencyAttributes.values()),
+        dependencyChain: Array.from(disallowedExpressionAttributes.values()),
       });
     }
 
-    console.debug(
-      `Rendering attribute ${calculateAttrXPath(expressionSource)}.`,
+    this.addLastExpressionDependencyOnExpressionAttribute(
+      expressionSource,
+      expressionString,
     );
 
-    disallowedDependencyAttributes.add(expressionSource);
+    disallowedExpressionAttributes.add(expressionSource);
     this.expressionsUnderEvaluation.push(expressionSource);
 
     const expressionValue = evaluateJinjaTemplateString(expressionString, {
@@ -420,7 +589,7 @@ evaluating an expression!`,
 'evaluateJinjaTemplate' resulted in a modified stack!`,
       );
     }
-    disallowedDependencyAttributes.delete(expressionSource);
+    disallowedExpressionAttributes.delete(expressionSource);
 
     const ownerElement = expressionSource.ownerElement;
     if (ownerElement === null) {
@@ -431,18 +600,29 @@ expression: ${JSON.stringify(expressionString)}`,
       );
     }
 
-    console.debug(
-      `Setting ${calculateElementXPath(ownerElement)}/@${expressionSource.localName} to ${JSON.stringify(expressionValue)}`,
-    );
-
     // Avoid triggering `MutationObserver` updates:
     if (
       ownerElement.getAttribute(expressionSource.localName) !== expressionValue
     ) {
       ownerElement.setAttribute(expressionSource.localName, expressionValue);
     }
+    console.debug('Rendered expression attribute.', {
+      expressionAttribute: expressionSource,
+      value: expressionValue,
+      skippingDomUpdateWhichIsNoOp:
+        ownerElement.getAttribute(expressionSource.localName) ===
+        expressionValue,
+      reverseDependencies:
+        this.reverseDependencies.attributeToReverseDependencies
+          .get(expressionSource)
+          ?.toJsValue(),
+    });
 
     renderedAttributes.add(expressionSource);
+  }
+
+  invalidateElement(element: Element): void {
+    this.renderedElements.delete(element);
   }
 
   /**
@@ -450,28 +630,24 @@ expression: ${JSON.stringify(expressionString)}`,
    * bounding box, or clientRect
    */
   renderElement(element: Element): void {
-    const {
-      documentEvaluationInformation,
-      elementDependencyCalculator,
-      renderedElements,
-    } = this;
+    const { documentEvaluationInformation, renderedElements } = this;
 
     if (renderedElements.has(element)) {
       console.debug(
-        `Skipping rendering of already rendered element: ${calculateElementXPath(element)}.`,
+        `Skipping already-rendered element: ${calculateElementXPath(element)}`,
       );
 
       return;
     }
-
-    console.debug(`Rendering element: ${calculateElementXPath(element)}.`);
 
     let referencedElement =
       documentEvaluationInformation.getReferencedElement(element);
 
     if (typeof referencedElement === 'undefined') {
       referencedElement =
-        elementDependencyCalculator.insertElementReference(element);
+        documentEvaluationInformation.documentReferencedElements.insertElementReference(
+          element,
+        );
     }
 
     // Render descendents, which may affect this element:
@@ -484,19 +660,33 @@ expression: ${JSON.stringify(expressionString)}`,
       this.renderAttributeExpression(attribute);
     }
 
+    console.debug('Rendered element.', {
+      element: element,
+      reverseDependencies: this.reverseDependencies.elementToReverseDependencies
+        .get(element)
+        ?.toJsValue(),
+    });
+
     renderedElements.add(element);
   }
 
-  renderCsvgConst(constName: string): unknown {
-    if (this.csvgConstNameToValue.has(constName)) {
+  /**
+   * Removes a `csvgConst`'s value from the cache, if present
+   */
+  invalidateConst(constName: string): void {
+    this.constNameToValue.delete(constName);
+    this.reverseDependencies.constNameToReverseDependencies.delete(constName);
+  }
+
+  renderConst(constName: string): unknown {
+    if (this.constNameToValue.has(constName)) {
+      const result = this.constNameToValue.get(constName);
       console.debug(
-        `Returning already-calculated constant value ${JSON.stringify(constName)}.`,
+        `Returning already-calculated constant ${JSON.stringify(constName)}=${JSON.stringify(result)}.`,
       );
 
-      return this.csvgConstNameToValue.get(constName);
+      return result;
     }
-
-    console.debug(`Evaluating constant ${JSON.stringify(constName)}`);
 
     const expressionAttribute =
       this.documentEvaluationInformation.getConstExpressionAttr(constName);
@@ -505,25 +695,27 @@ expression: ${JSON.stringify(expressionString)}`,
       throw new UndefinedConstantError({ constName });
     }
 
-    if (this.disallowedConstantNames.has(constName)) {
+    if (this.disallowedConstNames.has(constName)) {
       throw new CircularConstantDefinitionError({
         constName,
-        dependencyChain: Array.from(this.disallowedConstantNames),
+        dependencyChain: Array.from(this.disallowedConstNames),
       });
     }
-    this.disallowedConstantNames.add(constName);
+
+    const expressionString = expressionAttribute.value;
+
+    this.addLastExpressionDependencyOnConst(constName, expressionString);
+
+    this.disallowedConstNames.add(constName);
     this.expressionsUnderEvaluation.push(constName);
 
     let expressionValue: unknown;
     try {
-      expressionValue = evaluateJinjaExpressionString(
-        expressionAttribute.value,
-        {
-          expressionSource: expressionAttribute,
-          globalScope: this.jinjaGlobalScope,
-          jinjaEvaluator: this.jinjaEvaluator,
-        },
-      );
+      expressionValue = evaluateJinjaExpressionString(expressionString, {
+        expressionSource: expressionAttribute,
+        globalScope: this.jinjaGlobalScope,
+        jinjaEvaluator: this.jinjaEvaluator,
+      });
     } catch (e) {
       if (e instanceof InvalidExpressionError) {
         e.add_note(`While evaluating constant ${JSON.stringify(constName)}`);
@@ -531,11 +723,16 @@ expression: ${JSON.stringify(expressionString)}`,
       throw e;
     }
 
-    console.debug(
-      `Constant ${JSON.stringify(constName)} = ${JSON.stringify(expressionValue)}.`,
-    );
+    console.debug('Rendered constant.', {
+      name: constName,
+      value: expressionValue,
+      reverseDependencies:
+        this.reverseDependencies.constNameToReverseDependencies
+          .get(constName)
+          ?.toJsValue(),
+    });
 
-    this.csvgConstNameToValue.set(constName, expressionValue);
+    this.constNameToValue.set(constName, expressionValue);
 
     if (this.expressionsUnderEvaluation.pop() !== constName) {
       throw new InternalInterpreterError(
@@ -543,8 +740,33 @@ expression: ${JSON.stringify(expressionString)}`,
 'evaluateJinjaExpressionString' resulted in a modified stack!`,
       );
     }
-    this.disallowedConstantNames.delete(constName);
+    this.disallowedConstNames.delete(constName);
 
     return expressionValue;
+  }
+
+  invalidateCalculables(calculables: InvalidatedCalculables): void {
+    for (const constName of calculables.constantNames) {
+      this.invalidateConst(constName);
+    }
+    for (const attr of calculables.expressionAttrs) {
+      this.invalidateAttributeExpression(attr);
+    }
+    for (const element of calculables.elements) {
+      this.invalidateElement(element);
+    }
+  }
+
+  calculateInvalidatedCalculables(calculables: InvalidatedCalculables): void {
+    for (const attr of calculables.expressionAttrs) {
+      this.renderAttributeExpression(attr);
+    }
+  }
+
+  clearCalculationCache(): void {
+    this.renderedAttributes.clear();
+    this.renderedElements.clear();
+    this.constNameToValue.clear();
+    this.reverseDependencies.clear();
   }
 }

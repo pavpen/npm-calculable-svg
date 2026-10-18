@@ -24,7 +24,7 @@
         }
     </style>
     <csvg:consts
-        constExpr:labelBBox="csvg.getElementByDocLocalId('label').getBBox()"
+        constExpr:labelBBox="csvg.getElementByDocLocalId('label').getBoundingClientRect()"
     />
     <text csvg:doc-local-id="label" class="label" text-anchor="middle">
         The unfortunate label</text>

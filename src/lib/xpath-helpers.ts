@@ -8,7 +8,23 @@ export const calculateElementXPath = (element: Element): string => {
   const parentNode = element.parentNode;
 
   if (!parentNode || parentNode.nodeType !== Node.ELEMENT_NODE) {
-    return '';
+    return '//';
+  }
+
+  return calculateParentElementXPath(element);
+};
+
+const calculateParentElementXPath = (element: Element): string => {
+  const elementId = element.getAttribute('id');
+
+  if (elementId) {
+    return `//${element.tagName}[@id=${JSON.stringify(elementId)}]`;
+  }
+
+  const parentNode = element.parentNode;
+
+  if (!parentNode || parentNode.nodeType !== Node.ELEMENT_NODE) {
+    return '/';
   }
 
   const elementTagName = element.tagName.toLocaleLowerCase();
@@ -27,9 +43,9 @@ export const calculateElementXPath = (element: Element): string => {
     if (typeof sameTagSiblingIndex !== 'number') {
       throw new Error(`Element not found amoung the children of its parent!`);
     }
-    return `${calculateElementXPath(parentNode as Element)}/${element.tagName}[${sameTagSiblingIndex + 1}]`;
+    return `${calculateParentElementXPath(parentNode as Element)}/${element.tagName}[${sameTagSiblingIndex + 1}]`;
   } else {
-    return `${calculateElementXPath(parentNode as Element)}/${element.tagName}`;
+    return `${calculateParentElementXPath(parentNode as Element)}/${element.tagName}`;
   }
 };
 
@@ -43,5 +59,5 @@ ${attr}`,
     );
   }
 
-  return `${calculateElementXPath(ownerElement)}/@${attr.name}`;
+  return `${calculateParentElementXPath(ownerElement)}/@${attr.name}`;
 };

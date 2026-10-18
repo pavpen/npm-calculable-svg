@@ -1,0 +1,89 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    csvg:live-update="true"
+    attrExpr:viewBox="
+        {{- csvg.getConst('contentBBox').x - csvg.getConst('braceStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').y - csvg.getConst('braceStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').width + csvg.getConst('braceStrokeWidthPx') }}{{ ' ' }}
+        {{- csvg.getConst('contentBBox').height + csvg.getConst('braceStrokeWidthPx') }}"
+>
+    <title>
+        The label "Wondering what's over" above the label "Hoverable", the
+        latter spanned by a brace under it.
+    </title>
+    <desc>
+        Used to demonstrate Calculable SVG elements that respond to style
+        changes.  The "Hoverable" label changes size on mouse hover using an
+        animation to transition between sizes.  The size of the under-brace is
+        calculated from the size of the "Hoverable" label as the former
+        changes.
+    </desc>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <style>
+        .static-label {
+            font-size: 56px;
+            stroke-width: 0.5px;
+            fill: #00f;
+            stroke: #757575;
+        }
+        .responsive-label {
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #00f;
+            stroke: #757575;
+            /* An transition animation for showing CSVG live update on hover: */
+            transition: font-size 0.5s ease, fill 0.5s ease, stroke 0.5s ease;
+        }
+        .responsive-label:hover {
+            font-size: 56px;
+            fill: #757575;
+            stroke: #00f;
+        }
+        .brace {
+            stroke: #000;
+            stroke-width: 4.8px;
+            fill: none;
+        }
+    </style>
+    <csvg:consts
+        constExpr:fontSizePx="csvg.getUsedStyleDimensionsForId('responsive-label').fontSizePx"
+        constExpr:braceToBaseLineDistancePx="csvg.getConst('fontSizePx') * 0.2"
+        constExpr:braceStrokeWidthPx="csvg.getUsedStyleDimensionsForId('brace').strokeWidthPx"
+        constExpr:braceHandDepthPx="csvg.getConst('fontSizePx') * 0.2"
+        constExpr:braceHandCornerRadiusPx="csvg.getConst('fontSizePx') * 0.05"
+        constExpr:braceMouthDepthPx="csvg.getConst('fontSizePx') * 0.2"
+        constExpr:braceMouthWidthPx="csvg.getConst('fontSizePx') * 0.25"
+        constExpr:braceMouthCornerRadiusPx="csvg.getConst('fontSizePx') * 0.05"
+        constExpr:braceSpanPx="csvg.getElementByDocLocalId('responsive-label-container').getBBox().width"
+        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+    />
+    <g csvg:doc-local-id="content">
+        <path csvg:doc-local-id="brace" class="brace"
+            attrExpr:d="
+            {{- '' }}M1,{{ csvg.getConst('braceToBaseLineDistancePx') }}
+            {{- ' ' }}v{{ csvg.getConst('braceHandDepthPx') - csvg.getConst('braceHandCornerRadiusPx') }}
+            {{- ' ' }}a{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }},0,0,0,{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }}
+            {{- ' ' }}h{{ csvg.getConst('braceSpanPx') / 2 - csvg.getConst('braceHandCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') / 2 }}
+            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }}
+            {{- ' ' }}l{{ csvg.getConst('braceMouthWidthPx') / 2 - csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthDepthPx') - csvg.getConst('braceMouthCornerRadiusPx') }}
+            {{- ' ' }}l{{ csvg.getConst('braceMouthWidthPx') / 2 - csvg.getConst('braceMouthCornerRadiusPx') }},{{ 0 - csvg.getConst('braceMouthDepthPx') + csvg.getConst('braceMouthCornerRadiusPx') }}
+            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ 0 - csvg.getConst('braceMouthCornerRadiusPx') }}
+            {{- ' ' }}h{{ csvg.getConst('braceSpanPx') / 2 - csvg.getConst('braceHandCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') / 2 }}
+            {{- ' ' }}a{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }},0,0,0,{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ 0 - csvg.getConst('braceHandCornerRadiusPx') }}
+            {{- ' ' }}v{{ 0 - csvg.getConst('braceHandDepthPx') + csvg.getConst('braceHandCornerRadiusPx') }}{{ '' -}}
+            " />
+        <text class="static-label"
+            x="0"
+            attrExpr:y="{{ 0 - csvg.getElementByDocLocalId('responsive-label-container').getBBox().height - csvg.getConst('fontSizePx') * 0.2 }}">
+            Wondering what's over</text>
+        <!-- Wrap the <text/> in a </g>, so that we can get the bounding box
+            of the current pseudo element (like '::hover'): -->
+        <g csvg:doc-local-id="responsive-label-container">
+            <text csvg:doc-local-id="responsive-label" class="responsive-label" x="0" y="0"
+                text-anchor="start">Hoverable</text>
+        </g>
+    </g>
+</svg>

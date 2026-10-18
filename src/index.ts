@@ -1,4 +1,4 @@
-import { CsvgDocument } from './lib/csvg-document';
+import { CsvgDocument } from './lib/api/csvg-document';
 
 export const showDocumentDebugInformation = (document: Document): void => {
   const csvgDocument = new CsvgDocument(document);

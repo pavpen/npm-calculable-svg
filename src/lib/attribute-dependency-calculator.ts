@@ -1,13 +1,14 @@
+import { ComparableCsvgDomRect, CsvgDomRect } from './api/csvg-dom-rect';
 import type { AttributeDependencies } from './attribute-dependencies';
 import type { DocumentEvaluationInformation } from './document-evaluation-information';
-import type { ReferencedElement } from './element-dependencies';
-import type { ElementDepedencyCalculator } from './element-dependency-calculator';
+import type {
+  DocumentReferencedElements,
+  ReferencedElement,
+} from './document-referenced-elements';
 import {
-  type BBoxForEvaluation,
   type CsvgDocument,
   type CsvgElement,
   evaluateJinjaTemplateString,
-  toDomRectForEvaluation,
 } from './evaluation-helpers';
 import { AttributeNotFoundError } from './faults';
 import {
@@ -20,23 +21,23 @@ import { calculateAttrXPath } from './xpath-helpers';
 
 export class AttributeDependencyCalculator {
   private readonly outputDependencies: AttributeDependencies;
-  private readonly outputElementDependencyCalculator: ElementDepedencyCalculator;
+  private readonly documentReferencedElements: DocumentReferencedElements;
   private readonly documentEvaluationInformation: DocumentEvaluationInformation;
   private readonly jinjaEvaluator: JinjaEvaluator;
 
   constructor({
     outputDependencies,
-    outputElementDependencyCalculator,
+    documentReferencedElements,
     documentEvaluationInformation,
     jinjaEvaluator,
   }: {
     outputDependencies: AttributeDependencies;
-    outputElementDependencyCalculator: ElementDepedencyCalculator;
+    documentReferencedElements: DocumentReferencedElements;
     documentEvaluationInformation: DocumentEvaluationInformation;
     jinjaEvaluator: JinjaEvaluator;
   }) {
     this.outputDependencies = outputDependencies;
-    this.outputElementDependencyCalculator = outputElementDependencyCalculator;
+    this.documentReferencedElements = documentReferencedElements;
     this.documentEvaluationInformation = documentEvaluationInformation;
     this.jinjaEvaluator = jinjaEvaluator;
   }
@@ -51,8 +52,7 @@ export class AttributeDependencyCalculator {
         expressionSource: attribute,
         globalScope: createDependencyBuildingEnvironment({
           outputExpressionDependencies: dependencies,
-          outputElementDependencyCalculator:
-            this.outputElementDependencyCalculator,
+          documentReferencedElements: this.documentReferencedElements,
           documentEvaluationInformation: this.documentEvaluationInformation,
           jinjaEvaluator: this.jinjaEvaluator,
         }),
@@ -139,12 +139,12 @@ const toBBoxForDependencyEvaluation = ({
  */
 const createDependencyBuildingEnvironment = ({
   outputExpressionDependencies,
-  outputElementDependencyCalculator,
+  documentReferencedElements,
   documentEvaluationInformation,
   jinjaEvaluator,
 }: {
   outputExpressionDependencies: NonIterableElementPropertyExpressionSet;
-  outputElementDependencyCalculator: ElementDepedencyCalculator;
+  documentReferencedElements: DocumentReferencedElements;
   documentEvaluationInformation: DocumentEvaluationInformation;
   jinjaEvaluator: JinjaEvaluator;
 }) => {
@@ -152,8 +152,8 @@ const createDependencyBuildingEnvironment = ({
     element,
   ) => {
     const result: {
-      getBBox?: () => BBoxForEvaluation | undefined;
-      getBoundingClientRect?: () => BBoxForEvaluation | undefined;
+      getBBox?: () => CsvgDomRect | undefined;
+      getBoundingClientRect?: () => CsvgDomRect | undefined;
       getAttribute: (qualifiedName: string) => string | null;
     } = {
       getAttribute: (qualifiedName: string) => {
@@ -189,7 +189,7 @@ const createDependencyBuildingEnvironment = ({
 
     if (element instanceof SVGGraphicsElement) {
       result.getBBox = () => {
-        outputElementDependencyCalculator.insertElementReference(element);
+        documentReferencedElements.insertElementReference(element);
         return toBBoxForDependencyEvaluation({
           element,
           bbox: element.getBBox(),
@@ -202,8 +202,8 @@ const createDependencyBuildingEnvironment = ({
         outputExpressionDependencies.add(
           GetElementPropertyExpression.forGetBoundingClientRect({ element }),
         );
-        outputElementDependencyCalculator.insertElementReference(element);
-        return toDomRectForEvaluation(element.getBoundingClientRect());
+        documentReferencedElements.insertElementReference(element);
+        return new ComparableCsvgDomRect(element.getBoundingClientRect());
       };
     }
 

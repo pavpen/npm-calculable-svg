@@ -1,10 +1,11 @@
-import { AttributeDependencies } from './attribute-dependencies';
-import { AttributeDependencyCalculator } from './attribute-dependency-calculator';
-import { DocumentEvaluationInformation } from './document-evaluation-information';
-import { EvaluationState } from './evaluation-helpers';
-import { InvalidAttributeValue } from './faults';
-import { JinjaEvaluator } from './jinja-evaluator';
-import { csvg_attribute_names, csvg_namespace } from './xml-names';
+import { AttributeDependencies } from '../attribute-dependencies';
+import { AttributeDependencyCalculator } from '../attribute-dependency-calculator';
+import { DocumentEvaluationInformation } from '../document-evaluation-information';
+import { EvaluationState } from '../evaluation-helpers';
+import { InvalidAttributeValue } from '../faults';
+import { JinjaEvaluator } from '../jinja-evaluator';
+import { InvalidatedCalculables } from '../reverse-dependencies/invalidated-calculables';
+import { csvg_attribute_names, csvg_namespace } from '../xml-names';
 
 namespace options_defaults {
   export const liveUpdate = true;
@@ -88,6 +89,11 @@ export class CsvgDocument {
   private readonly evaluationState: EvaluationState;
   private readonly document: Document;
   private readonly options: CsvgDocumentOptions;
+  private mutationObserver: MutationObserver = new MutationObserver(
+    this.createHandleDocumentMutationsCallback(),
+  );
+  private pollStyleUpdatesTimeoutId: ReturnType<typeof setTimeout> | undefined =
+    undefined;
 
   constructor(document: Document) {
     this.document = document;
@@ -98,7 +104,7 @@ export class CsvgDocument {
 
     this.evaluationInformation = evaluationInformation;
 
-    // Cretae an expression evaluation environment:
+    // Create an expression evaluation environment:
     const jinjaEvaluator = new JinjaEvaluator();
     this.evaluationState = new EvaluationState({
       documentEvaluationInformation: evaluationInformation,
@@ -106,7 +112,6 @@ export class CsvgDocument {
     });
 
     this.options = new CsvgDocumentOptions({});
-    this.options.calculateFromRootNode(this.getRootNode());
   }
 
   private getRootNode(): Element | null {
@@ -126,59 +131,178 @@ export class CsvgDocument {
 
   private evaluateOnce() {
     // Calculate expression dependencies, and other information:
-    this.evaluationInformation.calculateForDocument(this.document);
+    console.groupCollapsed('Evaluating document.');
+    try {
+      this.evaluationInformation.calculateForDocument(this.document);
 
-    this.options.calculateFromRootNode(this.getRootNode());
+      this.options.calculateFromRootNode(this.getRootNode());
 
-    for (const element of this.evaluationInformation.getRootReferencedElements()) {
-      this.evaluationState.renderElement(element.element);
+      for (const element of this.evaluationInformation.getRootReferencedElements()) {
+        this.evaluationState.renderElement(element.element);
+      }
+      console.debug('Evaluated document.', {
+        reverseDependencies:
+          this.evaluationState.reverseDependencies.toJsValue(),
+      });
+    } finally {
+      console.groupEnd();
     }
   }
 
   render() {
+    this.options.calculateFromRootNode(this.getRootNode());
     this.evaluateOnce();
 
     if (this.options.liveUpdate) {
       this.watchDocumentMutations();
+
+      const styleLiveUpdateDelayMillis =
+        this.options.styleLiveUpdateDelayMillis;
+      if (
+        Number.isFinite(styleLiveUpdateDelayMillis) &&
+        styleLiveUpdateDelayMillis >= 0
+      ) {
+        this.watchStyleUpdates();
+      }
     }
   }
 
-  watchDocumentMutations(): void {
-    const handleMutations: MutationCallback = (
+  private createHandleDocumentMutationsCallback(): MutationCallback {
+    const csvgDocument = this;
+    const handleDocumentMutations: MutationCallback = (
       _mutationList,
       mutationObserver,
     ) => {
-      if (this.document.isConnected) {
-        console.debug('Re-evaluating Calculable SVG document:', this.document);
+      if (csvgDocument.document.isConnected) {
+        console.debug(
+          'Re-evaluating Calculable SVG document:',
+          csvgDocument.document,
+          ', due to mutations: ',
+          _mutationList,
+        );
 
+        // Avoid mutations from applying document updates from handling
+        // mutations:
         mutationObserver.disconnect();
-        mutationObserver.takeRecords();
 
-        this.evaluateOnce();
+        csvgDocument.evaluateOnce();
 
-        mutationObserver.observe(this.document, {
-          attributes: true,
-          childList: true,
-          subtree: true,
-        });
+        csvgDocument.resumeMutationObserver();
       } else {
         // Adding a Calculable SVG document to a parent document must be
         // handled by the parent document.
         console.debug(
           'Disconnecting MutationObserver from document:',
-          this.document,
+          csvgDocument.document,
         );
 
         mutationObserver.disconnect();
       }
     };
 
-    const observer = new MutationObserver(handleMutations);
+    return handleDocumentMutations;
+  }
 
-    observer.observe(document, {
+  private stopAndClearMutationObserver(): void {
+    this.mutationObserver.disconnect();
+    this.mutationObserver.takeRecords();
+  }
+
+  private resumeMutationObserver(): void {
+    this.mutationObserver.observe(this.document, {
       attributes: true,
       childList: true,
       subtree: true,
+    });
+  }
+
+  watchDocumentMutations(): void {
+    this.resumeMutationObserver();
+
+    console.debug('Watching for document mutations.', {
+      document: this.document,
+    });
+  }
+
+  private handleReferencedStyleChanges(
+    invalidatedCalculables: InvalidatedCalculables,
+  ): void {
+    if (invalidatedCalculables.isEmpty) {
+      return;
+    }
+
+    console.groupCollapsed(
+      'Processing invalidated calculables due to changes in referenced style.',
+      invalidatedCalculables.toObject(),
+    );
+
+    try {
+      this.stopAndClearMutationObserver();
+
+      this.evaluationState.invalidateCalculables(invalidatedCalculables);
+      this.evaluationState.calculateInvalidatedCalculables(
+        invalidatedCalculables,
+      );
+
+      this.evaluationState.reverseDependencies.recordLastEvaluationStyle();
+
+      console.debug(
+        'Last evaluation style:',
+        Array.from(
+          this.evaluationState.reverseDependencies.elementToReverseDependencies.entries(),
+        ).map(([element, reverseDependencies]) => ({
+          element,
+          lastBBox: reverseDependencies.lastBBox,
+          lastBoundingClientRect: reverseDependencies.lastBoundingClientRect,
+          pseudoElementNameToUsedStyleDimensionDependencies: Array.from(
+            reverseDependencies.pseudoElementNameToUsedStyleDimensionDependencies.entries(),
+          ).map(([pseudoElementName, reverseDependencies]) => [
+            pseudoElementName,
+            reverseDependencies.lastUsedStyleDimensions,
+          ]),
+        })),
+      );
+
+      this.resumeMutationObserver();
+    } finally {
+      console.groupEnd();
+    }
+  }
+
+  watchStyleUpdates(): void {
+    if (typeof this.pollStyleUpdatesTimeoutId !== 'undefined') {
+      console.warn(
+        'Call to start watching style updates when there already is a timeout \
+ID for a style updates poll!  Ignoring request.',
+      );
+      console.trace();
+      return;
+    }
+
+    const csvgDocument = this;
+    const pollForStyleUpdates = () => {
+      const invalidatedCalculables = new InvalidatedCalculables();
+
+      csvgDocument.evaluationState.reverseDependencies.collectCalculablesTransitivelyInvalidatedByStyle(
+        invalidatedCalculables,
+      );
+
+      csvgDocument.handleReferencedStyleChanges(invalidatedCalculables);
+
+      this.pollStyleUpdatesTimeoutId = setTimeout(
+        pollForStyleUpdates,
+        this.options.styleLiveUpdateDelayMillis,
+      );
+    };
+
+    this.pollStyleUpdatesTimeoutId = setTimeout(
+      pollForStyleUpdates,
+      this.options.styleLiveUpdateDelayMillis,
+    );
+
+    console.debug('Watching for style updates.', {
+      document: this.document,
+      delayMillis: this.options.styleLiveUpdateDelayMillis,
     });
   }
 
@@ -192,8 +316,8 @@ export class CsvgDocument {
     const attributeDependencies = new AttributeDependencies();
     const attributeDependencyCalculator = new AttributeDependencyCalculator({
       outputDependencies: attributeDependencies,
-      outputElementDependencyCalculator:
-        this.evaluationInformation.getElementDependencyCalculator(),
+      documentReferencedElements:
+        this.evaluationInformation.documentReferencedElements,
       documentEvaluationInformation: this.evaluationInformation,
       jinjaEvaluator,
     });
@@ -202,6 +326,6 @@ export class CsvgDocument {
     console.debug(`Attribute-setting expression depenedencies:
 ${attributeDependencies.toDebugString()}`);
     console.debug(`Element dependencies:
-${this.evaluationInformation.getElementDependencyCalculator().outputDependencies.toDebugString()}`);
+${this.evaluationInformation.documentReferencedElements.toDebugString()}`);
   }
 }

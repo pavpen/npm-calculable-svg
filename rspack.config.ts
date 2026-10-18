@@ -49,7 +49,13 @@ const evaluateForCurrentDocumentConfiguration: RspackOptions = {
           minify: true,
           compress: {
             // Strip console methods used for debugging:
-            pure_funcs: ['console.debug', 'console.log'],
+            pure_funcs: [
+              'console.debug',
+              'console.log',
+              'console.group',
+              'console.groupCollapsed',
+              'console.groupEnd',
+            ],
           },
         },
       }),

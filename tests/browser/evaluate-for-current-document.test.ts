@@ -190,8 +190,8 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
             expectedSvgProcessedSource,
           ),
         ).toBeTrue();
-        expect(consoleMessages).toHaveLength(0);
-        expect(consoleExceptions).toHaveLength(0);
+        expect(consoleMessages).toEqual([]);
+        expect(consoleExceptions).toEqual([]);
       } catch (e) {
         console.log(
           `Console messages:\n${consoleMessagesToString(consoleMessages)}`,

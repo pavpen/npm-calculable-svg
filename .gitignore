@@ -15,3 +15,6 @@
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# Developer scratchpad:
+/dev/

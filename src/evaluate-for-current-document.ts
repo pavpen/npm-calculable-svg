@@ -12,13 +12,9 @@ const processCurrentDocument = (): void => {
 };
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', processCurrentDocument, {
-    once: true,
-  });
+  window.addEventListener('load', processCurrentDocument, { once: true });
+
+  console.debug('Will evaluate current CSVG document when loaded.');
 } else {
   processCurrentDocument();
 }
-
-window.addEventListener('load', processCurrentDocument, { once: true });
-
-console.log('Running.');
