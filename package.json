@@ -20,7 +20,8 @@
     "preview": "rspack preview",
     "test:install": "playwright install --with-deps chromium",
     "test": "rstest",
-    "test:watch": "rstest --watch"
+    "test:watch": "rstest --watch",
+    "update-packages": "npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -41,6 +42,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "fast-xml-parser": "^5.11.2",
     "happy-dom": "^20.14.5",
+    "npm-check-updates": "^23.1.1",
     "playwright": "^1.63.0",
     "serve-index": "^1.9.2",
     "typescript": "^7.0.2"
