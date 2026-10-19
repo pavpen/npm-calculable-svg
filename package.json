@@ -21,7 +21,8 @@
     "test:install": "playwright install --with-deps chromium",
     "test": "rstest",
     "test:watch": "rstest --watch",
-    "update-packages": "npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always"
+    "update-packages": "npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always",
+    "build-changelog": "git-cliff"
   },
   "exports": {
     ".": "./dist/index.js",

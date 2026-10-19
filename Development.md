@@ -8,14 +8,22 @@ repository.  However, code generation hasn't been necessary so far.
 
 ## Setup
 
-Install the dependencies:
+* [Install Node.js](https://nodejs.org/en/download).
+* Install NPM dependencies:
 
-```bash
-npm install
+  ```bash
+  npm install
 
-# Install non-NPM dependencies for running unit tests:
-npm run test:install
-```
+  # Install non-NPM dependencies for running unit tests:
+  npm run test:install
+  ```
+
+* [Install Rust](https://rust-lang.org/tools/install/).
+* Install `git-cliff` for generating `CHANGELOG.md`.
+
+  ```bash
+  cargo install git-cliff
+  ```
 
 Create a Docker container for running an AI agent (e.g., Cursor):
 
@@ -23,7 +31,7 @@ Create a Docker container for running an AI agent (e.g., Cursor):
 sbx run cursor --name=cursor-npm-calculable-svg
 ```
 
-## Get started
+## Build, and Test
 
 ### Preview samples, and browser tests from a development server
 
@@ -60,3 +68,45 @@ E.g., using the Docker container from [Setup](#setup):
 ```bash
 sbx run --name=cursor-npm-calculable-svg
 ```
+
+## Build, or Update `CHANGELOG.md`
+
+```bash
+npm run build-changelog
+```
+
+## Commit Changes
+
+* Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+  guidelines.
+* The following commit footers are recognized for ChangeLog generation
+  (defined in [`cliff.toml`](cliff.toml)):
+  * `Changelog: ignore` Skips the commit when auto-generating `CHANGELOG.md`.
+    E.g., if a larger feature is broken down into small commits, a ChangeLog
+    reader usually needs one message for the feature, not one for each commit.
+    Also, refactors should usually be non-breaking changes, and include
+    `Changelog: ignore`.
+  * `changelog-message:` Overrides the ChangeLog message for this commit.  Can
+    be used, e.g., if a large feature is broke-down into smaller commits, and
+    the commit message for the smaller commit that makes the feature available
+    to users doesn't correspond to the summary useful to ChangeLog readers.
+    * You can find more examples of un-helpful ChangeLogs at
+      [keep a changelog](https://keepachangelog.com/en/1.1.0/).
+  * You should also use `Relates-to: <GitHub-issue-id>`, or
+    `Resolves: <GitHub-issue-id>` for pull requests that are related to an
+    issue.
+* Recognized commit types (defined in [`cliff.toml`](cliff.toml)), include:
+  `feat` (feature), `fix` (bug fix), `doc` (documentation),
+  `perf` (performance change), `refactor`, `test` (testing change),
+  `chore(release): prepare for`, `chore(deps.*)`, `chore(pr)`, `chore(pull)`,
+  `chore`, `ci`, `revert`.
+* Build, review, and add updates to `CHANGELOG.md` with each commit.
+  * It's much easier than rewriting commit history, or adding rules to ignore
+    mistyped commit messages in `cliff.toml`.
+  * This looks something like:
+    * `git add <. . .>`,
+    * `git commit` (write commit message),
+    * `npm run build-changelog`,
+    * `git diff CHANGELOG.md` (review ChangeLog changes),
+    * `git commit --amend CHANGELOG.md`,
+    * `git push`.
