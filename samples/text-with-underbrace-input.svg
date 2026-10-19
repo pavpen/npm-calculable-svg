@@ -48,7 +48,9 @@
             fill: none;
         }
     </style>
+    <!-- Configuration: -->
     <csvg:consts
+        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
         constExpr:fontSizePx="csvg.getUsedStyleDimensionsForId('responsive-label').fontSizePx"
         constExpr:braceToBaseLineDistancePx="csvg.getConst('fontSizePx') * 0.2"
         constExpr:braceStrokeWidthPx="csvg.getUsedStyleDimensionsForId('brace').strokeWidthPx"
@@ -58,22 +60,36 @@
         constExpr:braceMouthWidthPx="csvg.getConst('fontSizePx') * 0.25"
         constExpr:braceMouthCornerRadiusPx="csvg.getConst('fontSizePx') * 0.05"
         constExpr:braceSpanPx="csvg.getElementByDocLocalId('responsive-label-container').getBBox().width"
-        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+    />
+    <!-- Brace segment calculations: -->
+    <csvg:consts
+        constExpr:braceHandStraightLengthPx="csvg.getConst('braceHandDepthPx') - csvg.getConst('braceHandCornerRadiusPx')"
+        constExpr:braceSpanStraightLengthPx="csvg.getConst('braceSpanPx') / 2 - csvg.getConst('braceHandCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') / 2"
+        constExpr:braceMouthVertDistPastCornerPx="csvg.getConst('braceMouthDepthPx') - csvg.getConst('braceMouthCornerRadiusPx')"
+        constExpr:braceMouthCornerCosAngleQuadEqA="csvg.getConst('braceMouthVertDistPastCornerPx') * csvg.getConst('braceMouthVertDistPastCornerPx') + csvg.getConst('braceMouthWidthPx') * csvg.getConst('braceMouthWidthPx') / 4"
+        constExpr:braceMouthCornerCosAngleQuadEqB="2 * csvg.getConst('braceMouthCornerRadiusPx') * csvg.getConst('braceMouthVertDistPastCornerPx')"
+        constExpr:braceMouthCornerCosAngleQuadEqC="csvg.getConst('braceMouthCornerRadiusPx') * csvg.getConst('braceMouthCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') * csvg.getConst('braceMouthWidthPx') / 4"
+        constExpr:braceMouthCornerCosAngle="(-csvg.getConst('braceMouthCornerCosAngleQuadEqB') + Math.sqrt(csvg.getConst('braceMouthCornerCosAngleQuadEqB') * csvg.getConst('braceMouthCornerCosAngleQuadEqB') - 4 * csvg.getConst('braceMouthCornerCosAngleQuadEqA') * csvg.getConst('braceMouthCornerCosAngleQuadEqC'))) / (2 * csvg.getConst('braceMouthCornerCosAngleQuadEqA'))"
+        constExpr:braceMouthCornerSinAngle="Math.sqrt(1 - csvg.getConst('braceMouthCornerCosAngle') * csvg.getConst('braceMouthCornerCosAngle'))"
+        constExpr:braceMouthCornerHorizontalSizePx="csvg.getConst('braceMouthCornerRadiusPx') * csvg.getConst('braceMouthCornerSinAngle')"
+        constExpr:braceMouthCornerVerticalSizePx="csvg.getConst('braceMouthCornerRadiusPx') * (1 - csvg.getConst('braceMouthCornerCosAngle'))"
+        constExpr:braceMouthStraightLengthHorizontalComponentPx="csvg.getConst('braceMouthWidthPx') / 2 - csvg.getConst('braceMouthCornerHorizontalSizePx')"
+        constExpr:braceMouthStraightLengthVerticalComponentPx="csvg.getConst('braceMouthDepthPx') - csvg.getConst('braceMouthCornerVerticalSizePx')"
     />
     <g csvg:doc-local-id="content">
         <path csvg:doc-local-id="brace" class="brace"
             attrExpr:d="
             {{- '' }}M1,{{ csvg.getConst('braceToBaseLineDistancePx') }}
-            {{- ' ' }}v{{ csvg.getConst('braceHandDepthPx') - csvg.getConst('braceHandCornerRadiusPx') }}
+            {{- ' ' }}v{{ csvg.getConst('braceHandStraightLengthPx') }}
             {{- ' ' }}a{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }},0,0,0,{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }}
-            {{- ' ' }}h{{ csvg.getConst('braceSpanPx') / 2 - csvg.getConst('braceHandCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') / 2 }}
-            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }}
-            {{- ' ' }}l{{ csvg.getConst('braceMouthWidthPx') / 2 - csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthDepthPx') - csvg.getConst('braceMouthCornerRadiusPx') }}
-            {{- ' ' }}l{{ csvg.getConst('braceMouthWidthPx') / 2 - csvg.getConst('braceMouthCornerRadiusPx') }},{{ 0 - csvg.getConst('braceMouthDepthPx') + csvg.getConst('braceMouthCornerRadiusPx') }}
-            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ 0 - csvg.getConst('braceMouthCornerRadiusPx') }}
-            {{- ' ' }}h{{ csvg.getConst('braceSpanPx') / 2 - csvg.getConst('braceHandCornerRadiusPx') - csvg.getConst('braceMouthWidthPx') / 2 }}
+            {{- ' ' }}h{{ csvg.getConst('braceSpanStraightLengthPx') }}
+            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerHorizontalSizePx') }},{{ csvg.getConst('braceMouthCornerVerticalSizePx') }}
+            {{- ' ' }}l{{ csvg.getConst('braceMouthStraightLengthHorizontalComponentPx') }},{{ csvg.getConst('braceMouthStraightLengthVerticalComponentPx') }}
+            {{- ' ' }}l{{ csvg.getConst('braceMouthStraightLengthHorizontalComponentPx') }},{{ 0 - csvg.getConst('braceMouthStraightLengthVerticalComponentPx') }}
+            {{- ' ' }}a{{ csvg.getConst('braceMouthCornerRadiusPx') }},{{ csvg.getConst('braceMouthCornerRadiusPx') }},0,0,1,{{ csvg.getConst('braceMouthCornerHorizontalSizePx') }},{{ 0 - csvg.getConst('braceMouthCornerVerticalSizePx') }}
+            {{- ' ' }}h{{ csvg.getConst('braceSpanStraightLengthPx') }}
             {{- ' ' }}a{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ csvg.getConst('braceHandCornerRadiusPx') }},0,0,0,{{ csvg.getConst('braceHandCornerRadiusPx') }},{{ 0 - csvg.getConst('braceHandCornerRadiusPx') }}
-            {{- ' ' }}v{{ 0 - csvg.getConst('braceHandDepthPx') + csvg.getConst('braceHandCornerRadiusPx') }}{{ '' -}}
+            {{- ' ' }}v{{ 0 - csvg.getConst('braceHandStraightLengthPx') }}{{ '' -}}
             " />
         <text class="static-label"
             x="0"
