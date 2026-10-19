@@ -1,5 +1,5 @@
 {
-  "name": "@pavpen.dev/calculable-svg-browser",
+  "name": "@pavpen.dev/calculable-svg",
   "description": "Allow limited template expressions that can calculate SVG element attributes from bounding boxes, etc.",
   "version": "1.0.0",
   "private": true,
