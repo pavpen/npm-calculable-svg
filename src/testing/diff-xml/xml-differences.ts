@@ -25,7 +25,7 @@ export type ComparisonSource =
 export type ElementChildIndexPath = number[];
 
 const elementChildIndexPathToXPath = (path: ElementChildIndexPath): string =>
-  '//' + path.map((i) => `*[${i}]`).join('/');
+  `//${path.map((i) => `*[${i}]`).join('/')}`;
 
 export class AttributePath {
   readonly elementChildIndexPath: ElementChildIndexPath;

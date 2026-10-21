@@ -1,11 +1,11 @@
-import { ComparableCsvgDomRect } from '../api/csvg-dom-rect';
-import { ComparableCsvgUsedStyleDimensions } from '../api/csvg-used-style-dimensions';
-import { DocumentReferencedElements } from '../document-referenced-elements';
-import { InternalInterpreterError } from '../faults';
+import { CsvgDomRect } from '../../api/csvg-dom-rect';
+import { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
+import { InternalInterpreterError } from '../../api/faults';
+import type { DocumentReferencedElements } from '../document-referenced-elements';
 import { calculateElementXPath } from '../xpath-helpers';
-import { ElementReverseDependencies } from './element-reverse-dependencies';
-import { ExpressionReverseDependencies } from './expression-reverse-dependencies';
-import { InvalidatedCalculables } from './invalidated-calculables';
+import type { ElementReverseDependencies } from './element-reverse-dependencies';
+import type { ExpressionReverseDependencies } from './expression-reverse-dependencies';
+import type { InvalidatedCalculables } from './invalidated-calculables';
 
 export class DocumentReverseDependencies {
   readonly elementToReverseDependencies: Map<
@@ -87,7 +87,7 @@ Element path: ${JSON.stringify(calculateElementXPath(element))}.`,
           );
         }
 
-        const currentBBox = new ComparableCsvgDomRect(element.getBBox());
+        const currentBBox = new CsvgDomRect(element.getBBox());
         if (!currentBBox.equals(lastBBox)) {
           console.debug('Element BBox has changed since last calculation.', {
             element,
@@ -116,7 +116,7 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
           );
         }
 
-        const currentBoundingClientRect = new ComparableCsvgDomRect(
+        const currentBoundingClientRect = new CsvgDomRect(
           element.getBoundingClientRect(),
         );
         if (!currentBoundingClientRect.equals(lastBoundingClientRect)) {
@@ -144,10 +144,9 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
         pseudoElementName,
         usedStyleReverseDependencies,
       ] of reverseDependencies.pseudoElementNameToUsedStyleDimensionDependencies.entries()) {
-        const currentUsedStyleDimensions =
-          new ComparableCsvgUsedStyleDimensions(
-            window.getComputedStyle(element, pseudoElementName),
-          );
+        const currentUsedStyleDimensions = new CsvgUsedStyleDimensions(
+          window.getComputedStyle(element, pseudoElementName),
+        );
         if (
           !currentUsedStyleDimensions.equals(
             usedStyleReverseDependencies.lastUsedStyleDimensions,
@@ -182,10 +181,12 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
       elements: outputInvalidatedElements,
     } = outputInvalidatedCalculables;
 
-    let fringeAttrs: Set<Attr> = new Set(outputInvalidatedExpressionAttrs);
-    let fringeConstNames: Set<string> = new Set(outputInvalidatedConstantNames);
-    let nextFringeAttrs: Set<Attr> = new Set();
-    let nextFringeConstNames: Set<string> = new Set();
+    const fringeAttrs: Set<Attr> = new Set(outputInvalidatedExpressionAttrs);
+    const fringeConstNames: Set<string> = new Set(
+      outputInvalidatedConstantNames,
+    );
+    const nextFringeAttrs: Set<Attr> = new Set();
+    const nextFringeConstNames: Set<string> = new Set();
 
     while (fringeAttrs.size > 0 || fringeConstNames.size > 0) {
       // Expand the next level of trasitive dependencies into
@@ -281,7 +282,7 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
 it's not instanceof SVGGraphicsElement (which defines the \`getBBox\` method)!`,
           );
         }
-        const currentBBox = new ComparableCsvgDomRect(element.getBBox());
+        const currentBBox = new CsvgDomRect(element.getBBox());
         if (!currentBBox.equals(lastBBox)) {
           console.warn(
             'An element BBox, on which CSVG expressions depend, has changed \
@@ -306,7 +307,7 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
 \`getBoundingClientRect\` method)!`,
           );
         }
-        const currentBoundingClientRect = new ComparableCsvgDomRect(
+        const currentBoundingClientRect = new CsvgDomRect(
           element.getBoundingClientRect(),
         );
         if (!currentBoundingClientRect.equals(lastBoundingClientRect)) {
@@ -328,10 +329,9 @@ document re-calculation.',
         pseudoElementName,
         usedStyleReverseDependencies,
       ] of reverseDependencies.pseudoElementNameToUsedStyleDimensionDependencies.entries()) {
-        const currentUsedStyleDimensions =
-          new ComparableCsvgUsedStyleDimensions(
-            window.getComputedStyle(element, pseudoElementName),
-          );
+        const currentUsedStyleDimensions = new CsvgUsedStyleDimensions(
+          window.getComputedStyle(element, pseudoElementName),
+        );
         if (
           !currentUsedStyleDimensions.equals(
             usedStyleReverseDependencies.lastUsedStyleDimensions,

@@ -1,6 +1,11 @@
-import { InternalInterpreterError } from './faults';
-import { csvg_namespace } from './xml-names';
+import { InternalInterpreterError } from '../api/faults';
+import { csvg_namespace } from '../xml-names';
 import { calculateElementXPath } from './xpath-helpers';
+
+export type ReferencedElementJsRepr = {
+  element: Element;
+  closestDescendents: Array<ReferencedElementJsRepr>;
+};
 
 /**
  * Represents an element tree similar to the DOM tree, but with elements not
@@ -25,6 +30,15 @@ export class ReferencedElement {
   }: { element: Element; jinjaExpressionAttributes: Iterable<Attr> }) {
     this.element = element;
     this.jinjaExpressionAttributes = new Set(jinjaExpressionAttributes);
+  }
+
+  toJs(): ReferencedElementJsRepr {
+    return {
+      element: this.element,
+      closestDescendents: Array.from(this.closestDescendents).map((n) =>
+        n.toJs(),
+      ),
+    };
   }
 }
 
@@ -195,6 +209,12 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
         this.addRootReferencedElement(referencedElement);
       }
     }
+  }
+
+  toJs() {
+    return Array.from(this.elementToReferencedElement.values()).map(
+      (referencedElement) => referencedElement.toJs(),
+    );
   }
 
   toDebugString(): string {

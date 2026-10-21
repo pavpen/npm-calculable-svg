@@ -1,17 +1,5 @@
-import {
-  ComparableCsvgDomRect as ComparableCsvgDomRect,
-  CsvgDomRect,
-} from './api/csvg-dom-rect';
-import {
-  ComparableCsvgUsedStyleDimensions,
-  CsvgUsedStyleDimensions,
-} from './api/csvg-used-style-dimensions';
-import type { DocumentEvaluationInformation } from './document-evaluation-information';
-import {
-  ElementReverseDependencies,
-  UsedStyleDimensionsReverseDependencies,
-} from './reverse-dependencies/element-reverse-dependencies';
-import { ExpressionReverseDependencies } from './reverse-dependencies/expression-reverse-dependencies';
+import type { CsvgDomRect, CsvgDomRectProperties } from '../api/csvg-dom-rect';
+import type { CsvgUsedStyleDimensions } from '../api/csvg-used-style-dimensions';
 import {
   CircularAttributeSettingExpressionError,
   CircularConstantDefinitionError,
@@ -19,26 +7,27 @@ import {
   InvalidAttributeExpressionError,
   InvalidExpressionError,
   UndefinedConstantError,
-} from './faults';
+} from '../api/faults';
+import { CsvgGlobalNamespaceForEvaluation } from '../expression-api/impl/csvg-global-namespace-for-evaluation';
+import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import type { JinjaEvaluationScope, JinjaEvaluator } from './jinja-evaluator';
-import { csvg_namespace } from './xml-names';
-import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
 import { DocumentReverseDependencies } from './reverse-dependencies/document-reverse-dependencies';
-import { InvalidatedCalculables } from './reverse-dependencies/invalidated-calculables';
+import {
+  ElementReverseDependencies,
+  UsedStyleDimensionsReverseDependencies,
+} from './reverse-dependencies/element-reverse-dependencies';
+import { ExpressionReverseDependencies } from './reverse-dependencies/expression-reverse-dependencies';
+import type { InvalidatedCalculables } from './reverse-dependencies/invalidated-calculables';
+import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
 
 export interface CsvgElement {
-  readonly getBBox?: () => CsvgDomRect | undefined;
-  readonly getBoundingClientRect?: () => CsvgDomRect | undefined;
+  readonly getBBox?: () => CsvgDomRectProperties | undefined;
+  readonly getBoundingClientRect?: () => CsvgDomRectProperties | undefined;
   readonly getAttribute: (qualifiedName: string) => string | null;
 }
 
 export interface CsvgDocument {
   readonly getElementById: (id: string) => CsvgElement | null;
-}
-
-export interface CsvgForEvaluation {
-  readonly consts: Record<string, unknown>;
-  readonly getElementByDocLocalId: (docLocalId: string) => CsvgElement | null;
 }
 
 /**
@@ -214,9 +203,9 @@ evaluating an expression!`,
     return result;
   }
 
-  private addCurrentExpressionDependencyOnBBox(
+  addCurrentExpressionDependencyOnBBox(
     element: Element,
-    lastBBox: ComparableCsvgDomRect,
+    lastBBox: CsvgDomRect,
   ): void {
     let slot =
       this.reverseDependencies.elementToReverseDependencies.get(element);
@@ -242,9 +231,9 @@ evaluating an expression!`,
     }
   }
 
-  private addCurrentExpressionDependencyOnBoundingClientRect(
+  addCurrentExpressionDependencyOnBoundingClientRect(
     element: Element,
-    lastBoundingClientRect: ComparableCsvgDomRect,
+    lastBoundingClientRect: CsvgDomRect,
   ): void {
     let slot =
       this.reverseDependencies.elementToReverseDependencies.get(element);
@@ -270,10 +259,10 @@ evaluating an expression!`,
     }
   }
 
-  private addCurrentExpressionDependencyOnUsedStyleDimensions(
+  addCurrentExpressionDependencyOnUsedStyleDimensions(
     element: Element,
     pseudoElementName: string,
-    lastUsedStyleDimensions: ComparableCsvgUsedStyleDimensions,
+    lastUsedStyleDimensions: CsvgUsedStyleDimensions,
   ): void {
     let elementSlot =
       this.reverseDependencies.elementToReverseDependencies.get(element);
@@ -404,130 +393,9 @@ current expression string: ${JSON.stringify(expressionString)}.`,
   }
 
   private createJinjaGlobalScope(): JinjaEvaluationScope {
-    const { documentEvaluationInformation, jinjaEvaluator } = this;
-    const evaluationState = this;
-
-    const toElementForEvaluation: (element: Element) => CsvgElement = (
-      element,
-    ) => {
-      const result: {
-        getBBox?: () => CsvgDomRect | undefined;
-        getBoundingClientRect?: () => CsvgDomRect | undefined;
-        getAttribute: (qualifiedName: string) => string | null;
-      } = {
-        getAttribute: (qualifiedName: string) => {
-          if (!qualifiedName.includes(':')) {
-            const expressionAttribute = element.attributes.getNamedItemNS(
-              csvg_namespace.attributeExpression.jinja,
-              qualifiedName,
-            );
-            if (expressionAttribute !== null) {
-              evaluationState.renderAttributeExpression(expressionAttribute);
-            }
-          }
-          return element.getAttribute(qualifiedName);
-        },
-      };
-
-      if (element instanceof SVGGraphicsElement) {
-        result.getBBox = () => {
-          evaluationState.renderElement(element);
-          const result = new ComparableCsvgDomRect(element.getBBox());
-          evaluationState.addCurrentExpressionDependencyOnBBox(element, result);
-          return result;
-        };
-      }
-      if (element instanceof Element) {
-        result.getBoundingClientRect = () => {
-          evaluationState.renderElement(element);
-          const result = new ComparableCsvgDomRect(
-            element.getBoundingClientRect(),
-          );
-          evaluationState.addCurrentExpressionDependencyOnBoundingClientRect(
-            element,
-            result,
-          );
-          return result;
-        };
-      }
-
-      return Object.freeze(result);
-    };
-
-    /**
-     * The global `document` variable value when evaluating expressions
-     *
-     * We don't pass the browser `document` object, since we want to allow only
-     * limited operations from user expressions.  E.g., we don't want a user
-     * expression to add, or remove elements from the DOM.
-     */
-    const documentForEvaluation: CsvgDocument = Object.freeze({
-      getElementById: (elementId: string) => {
-        const element = document.getElementById(elementId);
-
-        if (!element) {
-          return element;
-        }
-
-        return toElementForEvaluation(element);
-      },
-    });
-
-    const csvg = {
-      getConst: (constName: string) => evaluationState.renderConst(constName),
-      getElementByDocLocalId: (docLocalId: string): CsvgElement | null => {
-        const element =
-          documentEvaluationInformation.getElementByDocLocalId(docLocalId);
-
-        if (!element) {
-          return null;
-        }
-
-        return toElementForEvaluation(element);
-      },
-      getUsedStyleDimensionsForId: (
-        docLocalId: string,
-        pseudoElementName: string | null = null,
-      ): CsvgUsedStyleDimensions => {
-        const element =
-          documentEvaluationInformation.getElementByDocLocalId(docLocalId);
-
-        if (!element) {
-          throw new InvalidExpressionError(
-            `Element with CSVG 'doc-local-id' ${JSON.stringify(docLocalId)} not found!`,
-          );
-        }
-
-        const result = new ComparableCsvgUsedStyleDimensions(
-          window.getComputedStyle(element, pseudoElementName),
-        );
-        evaluationState.addCurrentExpressionDependencyOnUsedStyleDimensions(
-          element,
-          pseudoElementName ?? '',
-          result,
-        );
-        return result;
-      },
-    };
-
-    const globalScope = jinjaEvaluator.createGlobalScope({
-      Math: {
-        abs: Math.abs,
-        min: Math.min,
-        max: Math.max,
-        round: Math.round,
-        sqrt: Math.sqrt,
-      },
-      NaN: NaN,
-      csvg,
-      document: documentForEvaluation,
-      parseFloat: parseFloat,
-      true: true,
-      false: false,
-      null: null,
-    });
-
-    return globalScope;
+    return this.jinjaEvaluator.createGlobalScope(
+      new CsvgGlobalNamespaceForEvaluation(this).toEvaluationObject(),
+    );
   }
 
   invalidateAttributeExpression(expressionSource: Attr): void {

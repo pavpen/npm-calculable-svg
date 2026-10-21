@@ -1,8 +1,8 @@
+import { csvg_attribute_names, csvg_namespace } from '../xml-names';
 import {
   DocumentReferencedElements,
   type ReferencedElement,
 } from './document-referenced-elements';
-import { csvg_attribute_names, csvg_namespace } from './xml-names';
 import { calculateElementXPath } from './xpath-helpers';
 
 export class DocumentEvaluationInformation {

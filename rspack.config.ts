@@ -1,10 +1,10 @@
+import path from 'node:path';
 import { defineConfig } from '@rspack/cli';
 import {
   type RspackOptions,
   rspack,
   type SwcLoaderOptions,
 } from '@rspack/core';
-import path from 'node:path';
 import serveIndex from 'serve-index';
 
 const testPreviewDir = path.resolve(__dirname, 'test-preview-dist');

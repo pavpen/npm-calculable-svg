@@ -4,14 +4,14 @@
     xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
     attrExpr:viewBox="
-        {{ csvg.getElementByDocLocalId('content').getBBox().x -
-            csvg.getConst('outlineStrokeWidthPx') }}
-        {{ csvg.getElementByDocLocalId('content').getBBox().y -
-            csvg.getConst('outlineStrokeWidthPx') * 2 / Math.sqrt(3) }}
-        {{ csvg.getElementByDocLocalId('content').getBBox().width +
-            csvg.getConst('outlineStrokeWidthPx') * 2 }}
-        {{ csvg.getElementByDocLocalId('content').getBBox().height +
-            csvg.getConst('outlineStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
+        {{ document.localIdToElement.get('content').getBBox().x -
+            document.getConst('outlineStrokeWidthPx') * Math.sqrt(3) }}
+        {{ document.localIdToElement.get('content').getBBox().y -
+            document.getConst('outlineStrokeWidthPx') * 2 / Math.sqrt(3) }}
+        {{ document.localIdToElement.get('content').getBBox().width +
+            document.getConst('outlineStrokeWidthPx') * 2 * Math.sqrt(3) }}
+        {{ document.localIdToElement.get('content').getBBox().height +
+            document.getConst('outlineStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
 >
     <title>The title text 'Title', followed by subtitle text
         'Beware of titles' inside an triangular warning-sign border</title>
@@ -41,47 +41,47 @@
         }
     </style>
     <csvg:consts
-        constExpr:titleFontSizePx="csvg.getUsedStyleDimensionsForId('title').fontSizePx"
-        constExpr:titleMarginBottomPx="csvg.getUsedStyleDimensionsForId('title').marginBottomPx"
-        constExpr:subtitleFontSizePx="csvg.getUsedStyleDimensionsForId('subtitle').fontSizePx"
+        constExpr:titleFontSizePx="document.localIdToElement.get('title').getUsedStyleDimensions().fontSizePx"
+        constExpr:titleMarginBottomPx="document.localIdToElement.get('title').getUsedStyleDimensions().marginBottomPx"
+        constExpr:subtitleFontSizePx="document.localIdToElement.get('subtitle').getUsedStyleDimensions().fontSizePx"
         constExpr:elevationCoefficient="0.5"
         constExpr:labelWidth="
-            csvg.getElementByDocLocalId('label').getBBox().width +
-            csvg.getUsedStyleDimensionsForId('subtitle').paddingLeftPx +
-            csvg.getUsedStyleDimensionsForId('subtitle').paddingRightPx
+            document.localIdToElement.get('label').getBBox().width +
+            document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingLeftPx +
+            document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingRightPx
             "
         constExpr:labelHeight="
-            csvg.getElementByDocLocalId('label').getBBox().height +
-            csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx
+            document.localIdToElement.get('label').getBBox().height +
+            document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingBottomPx
             "
         constExpr:outlineSideLength="
-            csvg.getConst('labelWidth') / (1 - csvg.getConst('elevationCoefficient') / 2) +
-            csvg.getConst('labelHeight') * 2 / Math.sqrt(3)
+            document.getConst('labelWidth') / (1 - document.getConst('elevationCoefficient') / 2) +
+            document.getConst('labelHeight') * 2 / Math.sqrt(3)
             "
-        constExpr:outlineHeight="csvg.getConst('outlineSideLength') * Math.sqrt(3) / 2"
-        constExpr:outlineStartY="csvg.getConst('subtitleFontSizePx')"
-        constExpr:outlineStrokeWidthPx="csvg.getUsedStyleDimensionsForId('outline').strokeWidthPx"
+        constExpr:outlineHeight="document.getConst('outlineSideLength') * Math.sqrt(3) / 2"
+        constExpr:outlineStartY="document.getConst('subtitleFontSizePx')"
+        constExpr:outlineStrokeWidthPx="document.localIdToElement.get('outline').getUsedStyleDimensions().strokeWidthPx"
     />
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
         <path csvg:doc-local-id="outline"
             class="outline"
             attrExpr:d="
-            M{{ 0 - csvg.getConst('outlineSideLength') / 2 }},{{ csvg.getConst('outlineStartY') }}
-            L0,{{ csvg.getConst('outlineStartY') - csvg.getConst('outlineHeight') }}
-            L{{ csvg.getConst('outlineSideLength') / 2 }},{{ csvg.getConst('outlineStartY') }}
+            M{{ 0 - document.getConst('outlineSideLength') / 2 }},{{ document.getConst('outlineStartY') }}
+            L0,{{ document.getConst('outlineStartY') - document.getConst('outlineHeight') }}
+            L{{ document.getConst('outlineSideLength') / 2 }},{{ document.getConst('outlineStartY') }}
             z"/>
         <g csvg:doc-local-id="label">
             <text csvg:doc-local-id="title" class="title"
                 attrExpr:y="{{
-                    0 - csvg.getConst('titleMarginBottomPx')
-                    - csvg.getConst('titleFontSizePx')
-                    - csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx
+                    0 - document.getConst('titleMarginBottomPx')
+                    - document.getConst('titleFontSizePx')
+                    - document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingBottomPx
                 }}"
                 text-anchor="middle">
                 Title</text>
             <text csvg:doc-local-id="subtitle" class="subtitle"
-                attrExpr:y="{{ 0 - csvg.getUsedStyleDimensionsForId('subtitle').paddingBottomPx }}"
+                attrExpr:y="{{ 0 - document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingBottomPx }}"
                 text-anchor="middle">
                 Beware of titles</text>
         </g>

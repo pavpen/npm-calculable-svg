@@ -4,10 +4,10 @@
     xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
     attrExpr:viewBox="
-      {{- Math.round(csvg.getConst('labelBBox').x) }}{{ ' ' }}
-      {{- Math.round(csvg.getConst('labelBBox').y) }}{{ ' ' }}
-      {{- Math.round(csvg.getConst('labelBBox').width) }}{{ ' ' }}
-      {{- Math.round(csvg.getConst('labelBBox').height) }}"
+      {{- Math.round(document.getConst('labelBBox').x) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').y) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').width) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').height) }}"
 >
     <title>The text 'The unfortunate label' with a calculated bounding box</title>
     <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
@@ -23,7 +23,7 @@
         }
     </style>
     <csvg:consts
-        constExpr:labelBBox="csvg.getElementByDocLocalId('label').getBoundingClientRect()"
+        constExpr:labelBBox="document.localIdToElement.get('label').getBBox()"
     />
     <text csvg:doc-local-id="label" class="label" text-anchor="middle">
         The unfortunate label</text>

@@ -1,5 +1,8 @@
-import type { GetElementPropertyExpression } from './get-element-property-expresion';
-import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
+import type { GetElementPropertyExpression } from '../private/get-element-property-expresion';
+import {
+  calculateAttrXPath,
+  calculateElementXPath,
+} from '../private/xpath-helpers';
 
 export class CalculableSvgError extends Error {
   add_note(note: string): this {

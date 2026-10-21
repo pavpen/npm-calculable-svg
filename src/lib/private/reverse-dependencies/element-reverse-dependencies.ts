@@ -1,13 +1,13 @@
-import { ComparableCsvgDomRect } from '../api/csvg-dom-rect';
-import { ComparableCsvgUsedStyleDimensions } from '../api/csvg-used-style-dimensions';
+import type { CsvgDomRect } from '../../api/csvg-dom-rect';
+import type { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
 import { DocumentExpressionSet } from '../document-expression-set';
 
 export class UsedStyleDimensionsReverseDependencies {
-  lastUsedStyleDimensions: ComparableCsvgUsedStyleDimensions;
+  lastUsedStyleDimensions: CsvgUsedStyleDimensions;
   readonly reverseDependencies: DocumentExpressionSet =
     new DocumentExpressionSet();
 
-  constructor(lastUsedStyleDimensions: ComparableCsvgUsedStyleDimensions) {
+  constructor(lastUsedStyleDimensions: CsvgUsedStyleDimensions) {
     this.lastUsedStyleDimensions = lastUsedStyleDimensions;
   }
 
@@ -28,10 +28,10 @@ export class UsedStyleDimensionsReverseDependencies {
  *   size, this dependency is not tracked here.
  */
 export class ElementReverseDependencies {
-  lastBBox: ComparableCsvgDomRect | null = null;
+  lastBBox: CsvgDomRect | null = null;
   readonly bboxReverseDependencies: DocumentExpressionSet =
     new DocumentExpressionSet();
-  lastBoundingClientRect: ComparableCsvgDomRect | null = null;
+  lastBoundingClientRect: CsvgDomRect | null = null;
   readonly boundingClientRectReverseDependencies: DocumentExpressionSet =
     new DocumentExpressionSet();
   readonly pseudoElementNameToUsedStyleDimensionDependencies: Map<

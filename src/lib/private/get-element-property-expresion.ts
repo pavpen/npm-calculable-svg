@@ -2,9 +2,9 @@ import {
   AttributeNotFoundError,
   InternalInterpreterError,
   InvalidGetElementPropertyExpressionError,
-} from './faults';
+} from '../api/faults';
+import { csvg_namespace } from '../xml-names';
 import { NonIterableElementStringSet } from './helpers/element-string-set';
-import { csvg_namespace } from './xml-names';
 import { calculateElementXPath } from './xpath-helpers';
 
 export namespace elementPropertyExpressionIds {
@@ -165,6 +165,13 @@ without an attribute name!  Expression: ${this.toString()}.`,
     }
 
     return attribute;
+  }
+
+  toJs() {
+    return {
+      element: this.element,
+      expression: this.expression,
+    };
   }
 
   toString(): string {

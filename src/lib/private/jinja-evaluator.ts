@@ -3,7 +3,7 @@ import {
   InternalInterpreterError,
   InvalidExpressionError,
   UnexpectedTrailingExpressionError,
-} from './faults';
+} from '../api/faults';
 
 export interface JinjaEvaluationScope extends huggingface_jinja.Environment {}
 
@@ -32,8 +32,11 @@ const interpreterToJavaScriptValue: (
       value.value as Map<string, JinjaInterpreterValue>
     ).entries()) {
       if (propertyName in resultObject) {
+        if (propertyName === 'toString') {
+          continue;
+        }
         throw new InvalidExpressionError(
-          `Result object has disallowed property named: ${JSON.stringify(propertyName)}`,
+          `Result object (${typeof value}) has disallowed property named: ${JSON.stringify(propertyName)}`,
         );
       }
       resultObject[propertyName] = interpreterToJavaScriptValue(propertyValue);
@@ -51,7 +54,7 @@ const interpreterToJavaScriptValue: (
  * engine.
  */
 export class JinjaEvaluator {
-  createGlobalScope(variables: Record<string, unknown>): JinjaEvaluationScope {
+  createGlobalScope(variables: object): JinjaEvaluationScope {
     const result = new huggingface_jinja.Environment();
 
     for (const [name, value] of Object.entries(variables)) {
@@ -83,7 +86,7 @@ export class JinjaEvaluator {
       ).entries()) {
         if (typeof propertyName !== 'string' || propertyName in resultObject) {
           throw new InvalidExpressionError(
-            `Result object has disallowed property named: ${JSON.stringify(propertyName)}`,
+            `Result object (${value}) has disallowed property named: ${JSON.stringify(propertyName)}`,
           );
         }
         resultObject[propertyName] =

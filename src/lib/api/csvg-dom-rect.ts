@@ -1,39 +1,20 @@
-import { hash } from '../helpers/hashable';
+import { CsvgDomRectForEvaluation as CsvgDomRectForExpressions } from '../expression-api/impl/csvg-dom-rect-for-evaluation';
+import { hash } from '../private/helpers/hashable';
 
-export interface CsvgDomRect {
+export interface CsvgDomRectProperties {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
 }
 
-export class ComparableCsvgDomRect {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
+export class CsvgDomRect extends CsvgDomRectForExpressions {
   private cachedHashCode: number | undefined;
 
-  constructor(value: DOMRect) {
-    this.x = value.x;
-    this.y = value.y;
-    this.width = value.width;
-    this.height = value.height;
-  }
-
-  toObject(): CsvgDomRect {
+  toObject(): CsvgDomRectProperties {
     return Object.freeze({
       ...this,
     });
-  }
-
-  equals(comparand: ComparableCsvgDomRect): boolean {
-    return (
-      this.x === comparand.x &&
-      this.y === comparand.y &&
-      this.width === comparand.width &&
-      this.height === comparand.height
-    );
   }
 
   get hashCode(): number {
@@ -50,9 +31,5 @@ export class ComparableCsvgDomRect {
     }
 
     return result;
-  }
-
-  toString(): string {
-    return `{ x: ${this.x}, y: ${this.y}, width: ${this.width}, height: ${this.height} }`;
   }
 }

@@ -1,11 +1,11 @@
-import { AttributeDependencies } from '../attribute-dependencies';
-import { AttributeDependencyCalculator } from '../attribute-dependency-calculator';
-import { DocumentEvaluationInformation } from '../document-evaluation-information';
-import { EvaluationState } from '../evaluation-helpers';
-import { InvalidAttributeValue } from '../faults';
-import { JinjaEvaluator } from '../jinja-evaluator';
-import { InvalidatedCalculables } from '../reverse-dependencies/invalidated-calculables';
+import { AttributeDependencies } from '../private/attribute-dependencies';
+import { AttributeDependencyCalculator } from '../private/attribute-dependency-calculator';
+import { DocumentEvaluationInformation } from '../private/document-evaluation-information';
+import { EvaluationState } from '../private/evaluation-helpers';
+import { JinjaEvaluator } from '../private/jinja-evaluator';
+import { InvalidatedCalculables } from '../private/reverse-dependencies/invalidated-calculables';
 import { csvg_attribute_names, csvg_namespace } from '../xml-names';
+import { InvalidAttributeValue } from './faults';
 
 namespace options_defaults {
   export const liveUpdate = true;
@@ -168,15 +168,14 @@ export class CsvgDocument {
   }
 
   private createHandleDocumentMutationsCallback(): MutationCallback {
-    const csvgDocument = this;
     const handleDocumentMutations: MutationCallback = (
       _mutationList,
       mutationObserver,
     ) => {
-      if (csvgDocument.document.isConnected) {
+      if (this.document.isConnected) {
         console.debug(
           'Re-evaluating Calculable SVG document:',
-          csvgDocument.document,
+          this.document,
           ', due to mutations: ',
           _mutationList,
         );
@@ -185,15 +184,15 @@ export class CsvgDocument {
         // mutations:
         mutationObserver.disconnect();
 
-        csvgDocument.evaluateOnce();
+        this.evaluateOnce();
 
-        csvgDocument.resumeMutationObserver();
+        this.resumeMutationObserver();
       } else {
         // Adding a Calculable SVG document to a parent document must be
         // handled by the parent document.
         console.debug(
           'Disconnecting MutationObserver from document:',
-          csvgDocument.document,
+          this.document,
         );
 
         mutationObserver.disconnect();
@@ -278,16 +277,14 @@ ID for a style updates poll!  Ignoring request.',
       console.trace();
       return;
     }
-
-    const csvgDocument = this;
     const pollForStyleUpdates = () => {
       const invalidatedCalculables = new InvalidatedCalculables();
 
-      csvgDocument.evaluationState.reverseDependencies.collectCalculablesTransitivelyInvalidatedByStyle(
+      this.evaluationState.reverseDependencies.collectCalculablesTransitivelyInvalidatedByStyle(
         invalidatedCalculables,
       );
 
-      csvgDocument.handleReferencedStyleChanges(invalidatedCalculables);
+      this.handleReferencedStyleChanges(invalidatedCalculables);
 
       this.pollStyleUpdatesTimeoutId = setTimeout(
         pollForStyleUpdates,
@@ -306,16 +303,16 @@ ID for a style updates poll!  Ignoring request.',
     });
   }
 
-  showDebugInformation(): void {
+  calculateDebugInformation() {
     // Calculate expression dependencies:
     console.debug(`Calculating expression dependency graph.`);
 
     this.evaluationInformation.calculateForDocument(this.document);
 
     const jinjaEvaluator = new JinjaEvaluator();
-    const attributeDependencies = new AttributeDependencies();
+    const attributeExpressionDependencies = new AttributeDependencies();
     const attributeDependencyCalculator = new AttributeDependencyCalculator({
-      outputDependencies: attributeDependencies,
+      outputDependencies: attributeExpressionDependencies,
       documentReferencedElements:
         this.evaluationInformation.documentReferencedElements,
       documentEvaluationInformation: this.evaluationInformation,
@@ -323,9 +320,10 @@ ID for a style updates poll!  Ignoring request.',
     });
     attributeDependencyCalculator.calculate();
 
-    console.debug(`Attribute-setting expression depenedencies:
-${attributeDependencies.toDebugString()}`);
-    console.debug(`Element dependencies:
-${this.evaluationInformation.documentReferencedElements.toDebugString()}`);
+    return {
+      attributeExpressionDependencies: attributeExpressionDependencies.toJs(),
+      referencedElements:
+        this.evaluationInformation.documentReferencedElements.toJs(),
+    };
   }
 }

@@ -1,3 +1,4 @@
+import { XMLParser } from 'fast-xml-parser';
 import {
   AttributePath,
   ComparisonSource as ComparisonComparand,
@@ -8,7 +9,6 @@ import {
   UnequalAttributeValues,
   UnequalTextNodes,
 } from './xml-differences';
-import { XMLParser } from 'fast-xml-parser';
 
 type XmlAttrNameToValue = Record<string, string | number | boolean | object>;
 type XmlNode = Array<

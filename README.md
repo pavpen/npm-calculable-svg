@@ -36,10 +36,10 @@ example are calculated from the text layout bounding box.
     xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
     attrExpr:viewBox="
-        {{- csvg.getConst('contentBBox').x - csvg.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- csvg.getConst('contentBBox').y - csvg.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- csvg.getConst('contentBBox').width + csvg.getConst('borderStrokeWidthPx') }}{{ ' ' }}
-        {{- csvg.getConst('contentBBox').height + csvg.getConst('borderStrokeWidthPx') }}"
+        {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
+        {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
 >
     <title>The text 'Start' inside an octagonal border</title>
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
@@ -53,35 +53,35 @@ example are calculated from the text layout bounding box.
     </style>
     <csvg:consts
         constExpr:padding="10"
-        constExpr:fontSize="csvg.getUsedStyleDimensionsForId('label').fontSizePx"
-        constExpr:borderStrokeWidthPx="csvg.getUsedStyleDimensionsForId('border').strokeWidthPx"
+        constExpr:fontSize="document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx"
+        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
         constExpr:octagonSideLength="
             Math.max(
-                (csvg.getElementByDocLocalId('label').getBBox().width
-                    - 2 * csvg.getConst('padding')
+                (document.localIdToElement.get('label').getBBox().width
+                    - 2 * document.getConst('padding')
                 ) / (1 + 2 / Math.sqrt(2)),
-                csvg.getConst('fontSize')
+                document.getConst('fontSize')
             )"
-        constExpr:octagonSlantedSideProjection="csvg.getConst('octagonSideLength') / Math.sqrt(2)"
-        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+        constExpr:octagonSlantedSideProjection="document.getConst('octagonSideLength') / Math.sqrt(2)"
+        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
     />
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
         <path csvg:doc-local-id="border" class="border"
             attrExpr:d="
-            {{- '' }}M1,{{ csvg.getConst('octagonSideLength') / 2 + csvg.getConst('padding') }}
-            {{- ' ' }}v{{ 0 - csvg.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{ csvg.getConst('octagonSlantedSideProjection') }},{{ 0 - csvg.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}h{{ csvg.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{ csvg.getConst('octagonSlantedSideProjection') }},{{ csvg.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}v{{- csvg.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{- 0 - csvg.getConst('octagonSlantedSideProjection') }},{{ csvg.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}h{{- 0 - csvg.getConst('octagonSideLength') }}
+            {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
+            {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{ document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}v{{- document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{- 0 - document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{- 0 - document.getConst('octagonSideLength') }}
             z"
             stroke="#000" fill="none" />
         <text csvg:doc-local-id="label" class="label"
-            attrExpr:x="{{ csvg.getConst('padding') }}"
-            attrExpr:y="{{ csvg.getConst('fontSize') / 2 }}"
+            attrExpr:x="{{ document.getConst('padding') }}"
+            attrExpr:y="{{ document.getConst('fontSize') / 2 }}"
             text-anchor="start">
             Start</text>
     </g>
@@ -216,7 +216,7 @@ To solve the above challenges we:
 
 ### Syntax, and Expressions
 
-See the [User Guide](doc/user-guide.md).
+See the [Expression API](src/lib/expression-api/index.ts).
 
 ## To-Do
 

@@ -4,10 +4,10 @@
     xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
     attrExpr:viewBox="
-        {{ csvg.getConst('contentBBox').x - csvg.getConst('borderStrokeWidthPx') / 2 }}
-        {{ csvg.getConst('contentBBox').y - csvg.getConst('borderStrokeWidthPx') / 2 }}
-        {{ csvg.getConst('contentBBox').width + csvg.getConst('borderStrokeWidthPx') }}
-        {{ csvg.getConst('contentBBox').height + csvg.getConst('borderStrokeWidthPx') }}"
+        {{ document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}
+        {{ document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}
+        {{ document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}
+        {{ document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
 >
     <!--
         https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#options
@@ -30,43 +30,43 @@
         }
     </style>
     <csvg:consts
-        constExpr:contentBBox="csvg.getElementByDocLocalId('content').getBBox()"
+        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
         constExpr:labelWidth="
-            csvg.getElementByDocLocalId('label').getBBox().width +
-            csvg.getUsedStyleDimensionsForId('label').paddingLeftPx +
-            csvg.getUsedStyleDimensionsForId('label').paddingRightPx
+            document.localIdToElement.get('label').getBBox().width +
+            document.localIdToElement.get('label').getUsedStyleDimensions().paddingLeftPx +
+            document.localIdToElement.get('label').getUsedStyleDimensions().paddingRightPx
             "
         constExpr:labelHeight="
-            csvg.getElementByDocLocalId('label').getBBox().height +
-            csvg.getUsedStyleDimensionsForId('label').paddingTopPx +
-            csvg.getUsedStyleDimensionsForId('label').paddingBottomPx
+            document.localIdToElement.get('label').getBBox().height +
+            document.localIdToElement.get('label').getUsedStyleDimensions().paddingTopPx +
+            document.localIdToElement.get('label').getUsedStyleDimensions().paddingBottomPx
             "
         constExpr:labelMiddleY="
-            csvg.getElementByDocLocalId('label').getBBox().y +
-            csvg.getElementByDocLocalId('label').getBBox().height / 2
+            document.localIdToElement.get('label').getBBox().y +
+            document.localIdToElement.get('label').getBBox().height / 2
             "
         constExpr:semiVerticalAxis="
-            csvg.getConst('labelHeight') / 2 +
+            document.getConst('labelHeight') / 2 +
             Math.max(
-                csvg.getUsedStyleDimensionsForId('label').paddingTopPx,
-                csvg.getUsedStyleDimensionsForId('label').paddingBottomPx
+                document.localIdToElement.get('label').getUsedStyleDimensions().paddingTopPx,
+                document.localIdToElement.get('label').getUsedStyleDimensions().paddingBottomPx
             )"
         constExpr:semiHorizontalAxis="
-            csvg.getConst('labelWidth') /
+            document.getConst('labelWidth') /
             Math.sqrt(Math.abs(
                 4 -
-                (csvg.getConst('labelHeight') * csvg.getConst('labelHeight')) /
-                (csvg.getConst('semiVerticalAxis') * csvg.getConst('semiVerticalAxis'))
+                (document.getConst('labelHeight') * document.getConst('labelHeight')) /
+                (document.getConst('semiVerticalAxis') * document.getConst('semiVerticalAxis'))
             ))
             "
-        constExpr:borderStrokeWidthPx="csvg.getUsedStyleDimensionsForId('border').strokeWidthPx"
+        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
     />
     <g csvg:doc-local-id="content">
         <ellipse csvg:doc-local-id="border" class="border"
             cx="0"
-            attrExpr:cy="{{ csvg.getConst('labelMiddleY') }}"
-            attrExpr:rx="{{ csvg.getConst('semiHorizontalAxis') }}"
-            attrExpr:ry="{{ csvg.getConst('semiVerticalAxis') }}" />
+            attrExpr:cy="{{ document.getConst('labelMiddleY') }}"
+            attrExpr:rx="{{ document.getConst('semiHorizontalAxis') }}"
+            attrExpr:ry="{{ document.getConst('semiVerticalAxis') }}" />
         <text csvg:doc-local-id="label" class="label" text-anchor="middle">
             The unfortunate label</text>
     </g>

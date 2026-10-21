@@ -1,8 +1,10 @@
 /**
  * Including this module in an SVG document (e.g., as a `<script/>` element)
- * causes Calculable SVG expressions to be resolved.
+ * causes Calculable SVG expressions in the SVG document to be resolved.
  *
  * Expression resolution is described [the README](../README.md).
+ *
+ * @module
  */
 
 import * as calculable_svg from './index';

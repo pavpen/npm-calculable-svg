@@ -1,4 +1,6 @@
-import { ComparableCsvgDomRect, CsvgDomRect } from './api/csvg-dom-rect';
+import { CsvgDomRect, type CsvgDomRectProperties } from '../api/csvg-dom-rect';
+import { AttributeNotFoundError } from '../api/faults';
+import { csvg_namespace } from '../xml-names';
 import type { AttributeDependencies } from './attribute-dependencies';
 import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import type {
@@ -10,13 +12,11 @@ import {
   type CsvgElement,
   evaluateJinjaTemplateString,
 } from './evaluation-helpers';
-import { AttributeNotFoundError } from './faults';
 import {
   GetElementPropertyExpression,
   type NonIterableElementPropertyExpressionSet,
 } from './get-element-property-expresion';
 import type { JinjaEvaluator } from './jinja-evaluator';
-import { csvg_namespace } from './xml-names';
 import { calculateAttrXPath } from './xpath-helpers';
 
 export class AttributeDependencyCalculator {
@@ -152,8 +152,8 @@ const createDependencyBuildingEnvironment = ({
     element,
   ) => {
     const result: {
-      getBBox?: () => CsvgDomRect | undefined;
-      getBoundingClientRect?: () => CsvgDomRect | undefined;
+      getBBox?: () => CsvgDomRectProperties | undefined;
+      getBoundingClientRect?: () => CsvgDomRectProperties | undefined;
       getAttribute: (qualifiedName: string) => string | null;
     } = {
       getAttribute: (qualifiedName: string) => {
@@ -203,7 +203,7 @@ const createDependencyBuildingEnvironment = ({
           GetElementPropertyExpression.forGetBoundingClientRect({ element }),
         );
         documentReferencedElements.insertElementReference(element);
-        return new ComparableCsvgDomRect(element.getBoundingClientRect());
+        return new CsvgDomRect(element.getBoundingClientRect());
       };
     }
 

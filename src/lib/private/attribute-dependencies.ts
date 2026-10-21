@@ -32,6 +32,17 @@ export class AttributeDependencies {
     return this.attributeToConstNameDependencies.get(attribute) ?? [];
   }
 
+  toJs() {
+    return {
+      attributeToElementPropertyDependencies: Array.from(
+        this.attributeToElementPropertyDependencies.entries(),
+      ).map(([attribute, dependencies]) => [
+        attribute,
+        dependencies.synthesizeValues().map((e) => e.toJs()),
+      ]),
+    };
+  }
+
   toDebugString(): string {
     return Array.from(this.attributeToElementPropertyDependencies.entries())
       .map(([attribute, dependencies]) => {
