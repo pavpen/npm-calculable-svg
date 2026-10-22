@@ -13,10 +13,11 @@ platform font substitution, or other events.
   target rendering environments.  E.g., the platform on which it's rendered
   can substitute a different font; SVG can be embedded in a Web page with a
   fluid design (where the ratio between several text sizes in the document can
-  change if a user zooms in, or out).  (E.g., see the article
+  change if a user zooms in, or out).  (E.g., see articles like
+  [_Modern Fluid Typography Using CSS Clamp_](https://www.smashingmagazine.com/2022/01/modern-fluid-typography-css-clamp/),
   [_Adapting a type scale based for users that zoom… a discussion and experiment_](https://iknowdavehouse.medium.com/adapting-a-type-scale-based-for-users-that-zoom-a-discussion-and-experiment-5713f11f471f)
-  for an in-depth example of changing text size ratios in response to zoom
-  level.)
+  for an in-depth example of changing text size ratios in response to screen
+  size, or zoom level.)
 
 As a result, it becomes non-trivial to write a portable, and typographically
 correct SVG for something that can be stated as simply as: "Create an
