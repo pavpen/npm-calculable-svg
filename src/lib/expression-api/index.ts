@@ -157,7 +157,7 @@
  *             font-size: 48px;
  *             stroke-width: 0.5px;
  *             fill: #000;
- *             stroke: #757575; 
+ *             stroke: #757575;
  *         }
  *     </style>
  *     <csvg:consts

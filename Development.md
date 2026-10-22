@@ -6,7 +6,7 @@ mention the common project development commands.
 There are also files for code-generation ML Language Models in this
 repository.  However, code generation hasn't been necessary so far.
 
-## Setup
+## Developer Environment Setup
 
 * [Install Node.js](https://nodejs.org/en/download).
 * Install NPM dependencies:
@@ -31,7 +31,14 @@ Create a Docker container for running an AI agent (e.g., Cursor):
 sbx run cursor --name=cursor-npm-calculable-svg
 ```
 
-## Build, and Test
+## Lint, Build, and Test
+
+### Lint
+
+```terminal
+npm run check
+npm run format
+```
 
 ### Preview samples, and browser tests from a development server
 
@@ -63,7 +70,8 @@ npm run check && npm run build && npm run test
 
 ### Start an AI agent session
 
-E.g., using the Docker container from [Setup](#setup):
+E.g., using the Docker container from
+[Developer Environment Setup](#developer-environment-setup):
 
 ```bash
 sbx run --name=cursor-npm-calculable-svg
@@ -110,3 +118,17 @@ npm run build-changelog
     * `git diff CHANGELOG.md` (review ChangeLog changes),
     * `git commit --amend CHANGELOG.md`,
     * `git push`.
+
+## Release
+
+* Lint: `npm npm run check; npm run format`
+* Build: `npm run build`
+* Unit test: `npm run test`
+* Re-build the ChangeLog: `git-cliff`
+* Revew [`CHANGELOG.md`](CHANGELOG.md)
+* Tag the release commit with a tag that consists of `'v'` + a
+  [semantic version](https://semver.org/)
+  * `git tag --annotate v0.0.0-alpha.0`
+  * `git push origin v0.0.0-alpha.0`
+* [Upload release artefacts](https://github.com/pavpen/npm-calculable-svg/releases/new)
+  (`dist/*.js`, `dist/*.js.map`, `dist/*.ts`) to GitHub.
