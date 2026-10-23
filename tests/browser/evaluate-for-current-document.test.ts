@@ -2,9 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect } from '@rstest/playwright';
 import type { ConsoleMessage, Page } from 'playwright';
-import { isPageDocumentEquivalentToSvgSource } from '../../src/testing/assertions/page-document-equivalence';
-import { testWithTemporaryDirectoryFixture } from '../../src/testing/fixtures/test-with-temporary-directory';
-import { serveGeneratedDirectory } from '../../src/testing/serve-generated-directory';
+import { isPageDocumentEquivalentToSvgSource } from '../../src/private/testing/assertions/page-document-equivalence';
+import { testWithTemporaryDirectoryFixture } from '../../src/private/testing/fixtures/test-with-temporary-directory';
+import { serveGeneratedDirectory } from '../../src/private/testing/serve-generated-directory';
 
 const EVALUATE_SCRIPT_BASENAME = 'evaluate-for-current-document.js';
 const EVALUATE_SCRIPT_DIST_PATH = `./dist/${EVALUATE_SCRIPT_BASENAME}`;

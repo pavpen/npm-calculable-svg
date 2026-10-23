@@ -28,7 +28,7 @@ elliptical speech bubble around this given text label."
 The `<svg/>` `viewBox` attribute, and border dimensions in the following
 example are calculated from the text layout bounding box.
 
-[`samples/text-with-octagonal-border-input.svg`](samples/text-with-octagonal-border-input.svg):
+![Example text with octagonal border rendered by CSVG evaluation](build-doc/examples/text-with-octagonal-border.svg):
 
 ```svg
 <svg
@@ -43,7 +43,8 @@ example are calculated from the text layout bounding box.
         {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
 >
     <title>The text 'Start' inside an octagonal border</title>
-    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <!-- Adding the following script renders calculables in this document: -->
+    <script crossorigin="anonymous" href="https://github.com/pavpen/npm-calculable-svg/releases/download/v0.0.0-alpha.0/evaluate-for-current-document-debug.js"></script>
     <style>
         .label {
             font-size: 48px;

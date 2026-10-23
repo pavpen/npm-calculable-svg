@@ -1,4 +1,3 @@
-import type { GetElementPropertyExpression } from '../private/get-element-property-expresion';
 import {
   calculateAttrXPath,
   calculateElementXPath,
@@ -69,27 +68,6 @@ ${calculateElementXPath(element)}/@${attributeQualifiedName}`,
 }
 
 export class InvalidExpressionError extends CalculableSvgError {}
-
-export class InvalidGetElementPropertyExpressionError extends InvalidExpressionError {
-  readonly expression: GetElementPropertyExpression;
-  readonly cause: Error | undefined;
-
-  constructor({
-    expression,
-    cause,
-  }: {
-    expression: GetElementPropertyExpression;
-    cause?: Error | undefined;
-  }) {
-    const causeMessage = cause ? `  Caused by ${cause}` : '';
-    super(
-      `Invalid get element property expression: ${expression}!${causeMessage}`,
-    );
-
-    this.expression = expression;
-    this.cause = cause;
-  }
-}
 
 export class InvalidAttributeExpressionError extends InvalidExpressionError {
   readonly expressionString: string;

@@ -1,0 +1,57 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attrExpr:viewBox="
+        {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
+        {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
+>
+    <title>The text 'Start' inside an octagonal border</title>
+    <!-- Adding the following script renders calculables in this document: -->
+    <script crossorigin="anonymous" href="https://github.com/pavpen/npm-calculable-svg/releases/download/v0.0.0-alpha.0/evaluate-for-current-document-debug.js"></script>
+    <style>
+        .label {
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #000;
+            stroke: #757575; 
+        }
+    </style>
+    <csvg:consts
+        constExpr:padding="10"
+        constExpr:fontSize="document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx"
+        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
+        constExpr:octagonSideLength="
+            Math.max(
+                (document.localIdToElement.get('label').getBBox().width
+                    - 2 * document.getConst('padding')
+                ) / (1 + 2 / Math.sqrt(2)),
+                document.getConst('fontSize')
+            )"
+        constExpr:octagonSlantedSideProjection="document.getConst('octagonSideLength') / Math.sqrt(2)"
+        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
+    />
+    <g csvg:doc-local-id="content">
+        <!-- The octagon enclosing the label: -->
+        <path csvg:doc-local-id="border" class="border"
+            attrExpr:d="
+            {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
+            {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{ document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}v{{- document.getConst('octagonSideLength') }}
+            {{- ' ' }}l{{- 0 - document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
+            {{- ' ' }}h{{- 0 - document.getConst('octagonSideLength') }}
+            z"
+            stroke="#000" fill="none" />
+        <text csvg:doc-local-id="label" class="label"
+            attrExpr:x="{{ document.getConst('padding') }}"
+            attrExpr:y="{{ document.getConst('fontSize') / 2 }}"
+            text-anchor="start">
+            Start</text>
+    </g>
+</svg>

@@ -52,7 +52,7 @@
  *     <!-- The script that renders calculables in this document: -->
  *     <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
  *     <csvg:consts
- *         constExpr:labelBBox="document.idToElement.get('label').getBBox()"
+ *         constExpr:labelBBox="document.localIdToElement.get('label').getBBox()"
  *     />
  *     <text csvg:doc-local-id="label">The unfortunate label</text>
  * </svg>
@@ -62,7 +62,7 @@
  * * Each value must be unique within the SVG document (but not across the
  *   whole HTML DOM that may contain this, and other SVG documents).
  *
- * See {@link CsvgDocument.idToElement}.
+ * See {@link CsvgDocument.localIdToElement}.
  *
  * ### Attribute Calculated by a Jija Expression
  *
@@ -102,7 +102,7 @@
  *     <!-- The script that renders calculables in this document: -->
  *     <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
  *     <csvg:consts
- *         constExpr:labelBBox="document.idToElement.get('label').getBBox()"
+ *         constExpr:labelBBox="document.localIdToElement.get('label').getBBox()"
  *     />
  *     <text csvg:doc-local-id="label">The unfortunate label</text>
  * </svg>
@@ -214,7 +214,7 @@
  *   * Other constant expressions (by accessing them, e.g. with
  *     {@link CsvgDocument.getConst});
  *   * DOM elements (e.g., by accessing a property, such as by using
- *     {@link CsvgElement.getBBox}).
+ *     {@link CsvgGraphicsElement.getBBox}).
  * * Expressions, and their dependencies must form a Directed Acyclic Graph.
  *   (I.e., circular references are not allowed.)
  *

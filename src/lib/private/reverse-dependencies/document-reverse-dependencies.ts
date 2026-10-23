@@ -1,7 +1,7 @@
 import { CsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
 import { InternalInterpreterError } from '../../api/faults';
-import type { DocumentReferencedElements } from '../document-referenced-elements';
+import type { DocumentReferencedElements } from '../../api/internal/document-referenced-elements';
 import { calculateElementXPath } from '../xpath-helpers';
 import type { ElementReverseDependencies } from './element-reverse-dependencies';
 import type { ExpressionReverseDependencies } from './expression-reverse-dependencies';

@@ -43,7 +43,7 @@ export class CsvgUsedStyleDimensionsForEvaluation {
     this.strokeWidthPx = parseCssFloatProprty(style.strokeWidth);
   }
 
-  equals(comparand: CsvgUsedStyleDimensionsForEvaluation): boolean {
+  equals(comparand: CsvgUsedStyleDimensions): boolean {
     return (
       this.leftPx === comparand.leftPx &&
       this.rightPx === comparand.rightPx &&

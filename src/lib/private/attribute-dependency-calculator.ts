@@ -1,12 +1,12 @@
 import { CsvgDomRect, type CsvgDomRectProperties } from '../api/csvg-dom-rect';
 import { AttributeNotFoundError } from '../api/faults';
-import { csvg_namespace } from '../xml-names';
-import type { AttributeDependencies } from './attribute-dependencies';
-import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import type {
   DocumentReferencedElements,
   ReferencedElement,
-} from './document-referenced-elements';
+} from '../api/internal/document-referenced-elements';
+import { csvg_namespace } from '../xml-names';
+import type { AttributeDependencies } from './attribute-dependencies';
+import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import {
   type CsvgDocument,
   type CsvgElement,

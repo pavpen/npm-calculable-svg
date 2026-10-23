@@ -1,0 +1,24 @@
+{
+  "name": "@pavpen.dev/npm-calculable-svg_typedoc",
+  "version": "1.0.0",
+  "description": "A separate Node.js environment for running `typedoc`, since its current latest version conflicts with recent versions of TypeScript used in </src>.",
+  "homepage": "https://github.com/pavpen/npm-calculable-svg#readme",
+  "bugs": {
+    "url": "https://github.com/pavpen/npm-calculable-svg/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pavpen/npm-calculable-svg.git"
+  },
+  "license": "MIT",
+  "author": "Pavel M. Penev",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build-doc": "typedoc",
+    "test": "npm run build-doc"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.20"
+  }
+}

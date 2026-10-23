@@ -1,9 +1,9 @@
 import {
   AttributeNotFoundError,
   InternalInterpreterError,
-  InvalidGetElementPropertyExpressionError,
 } from '../api/faults';
 import { csvg_namespace } from '../xml-names';
+import { InvalidGetElementPropertyExpressionError } from './faults';
 import { NonIterableElementStringSet } from './helpers/element-string-set';
 import { calculateElementXPath } from './xpath-helpers';
 

@@ -17,7 +17,7 @@ export class CsvgDomRectForEvaluation {
     this.height = value.height;
   }
 
-  equals(comparand: CsvgDomRectForEvaluation): boolean {
+  equals(comparand: CsvgDomRect): boolean {
     return (
       this.x === comparand.x &&
       this.y === comparand.y &&

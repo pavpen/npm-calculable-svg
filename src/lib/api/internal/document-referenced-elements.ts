@@ -1,7 +1,15 @@
-import { InternalInterpreterError } from '../api/faults';
-import { csvg_namespace } from '../xml-names';
-import { calculateElementXPath } from './xpath-helpers';
+import { calculateElementXPath } from '../../private/xpath-helpers';
+import { csvg_namespace } from '../../xml-names';
+import { InternalInterpreterError } from '../faults';
 
+/**
+ * Debug representation of a CSVG referenced element
+ *
+ * ⚠️ This type is for package internal, and debug use.  It's API is not
+ * stable, even across minor release versions.  Avoid use in production code.
+ *
+ * @internal
+ */
 export type ReferencedElementJsRepr = {
   element: Element;
   closestDescendents: Array<ReferencedElementJsRepr>;
@@ -11,12 +19,17 @@ export type ReferencedElementJsRepr = {
  * Represents an element tree similar to the DOM tree, but with elements not
  * used by Calculable SVG omitted
  *
+ * ⚠️ This type is for package internal, and debug use.  It's API is not
+ * stable, even across minor release versions.  Avoid use in production code.
+ *
  * An element is not used by Calculable SVG, if all of the following apply:
  * * It doesn't have any Calculable SVG attributes.
  * * It's bounding box, or boundingClientRect is not referenced by any
  *   Calculable SVG expression.
  * * It's computed used style is not referenced by any Calculable SVG
  *   expression (such as `csvg.getUsedStyleDimensionsForId(docLocalId)`).
+ *
+ * @internal
  */
 export class ReferencedElement {
   closestAntecedent: ReferencedElement | null = null;
@@ -42,6 +55,15 @@ export class ReferencedElement {
   }
 }
 
+/**
+ * The sub-set of a Calculable SVG's DOM elements, each of which is a CSVG
+ * {@link ReferencedElement}
+ *
+ * ⚠️ This type is for package internal, and debug use.  It's API is not
+ * stable, even across minor release versions.  Avoid use in production code.
+ *
+ * @internal
+ */
 export class DocumentReferencedElements {
   private readonly elementToReferencedElement: Map<Element, ReferencedElement> =
     new Map();

@@ -4,8 +4,9 @@
 *.log*
 
 # Dist
-/node_modules
+/build-doc/typedoc/node_modules/
 /dist/
+/node_modules
 /test-preview-dist/
 
 # Profile

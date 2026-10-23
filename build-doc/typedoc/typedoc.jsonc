@@ -1,0 +1,8 @@
+{
+  "entryPoints": ["../../src/index.ts"],
+  "tsconfig": "../../tsconfig.json",
+  "name": "🏗Calculable SVG SDK",
+  "entryPointStrategy": "Expand",
+  "out": "../../dist/doc"
+  // "build-doc": "typedoc --tsconfig ../../tsconfig.json --name \"🏗Calculable SVG SDK\" --entryPointStrategy Expand ../../src"
+}
