@@ -6,10 +6,13 @@ import {
   InternalInterpreterError,
   InvalidAttributeExpressionError,
   InvalidExpressionError,
+  InvalidJinjaExpressionError,
+  InvalidStringValueError,
   UndefinedConstantError,
 } from '../api/faults';
+import { DocumentEvaluationInformation } from '../api/internal/document-evaluation-information';
 import { CsvgGlobalNamespaceForEvaluation } from '../expression-api/impl/csvg-global-namespace-for-evaluation';
-import type { DocumentEvaluationInformation } from './document-evaluation-information';
+import { csvg_xml } from '../xml-api';
 import type { JinjaEvaluationScope, JinjaEvaluator } from './jinja-evaluator';
 import { DocumentReverseDependencies } from './reverse-dependencies/document-reverse-dependencies';
 import {
@@ -84,12 +87,11 @@ export const evaluateJinjaTemplateString = (
 const evaluateJinjaExpressionString = (
   expression: string,
   options: {
-    expressionSource: Attr;
     globalScope: JinjaEvaluationScope;
     jinjaEvaluator: JinjaEvaluator;
   },
 ): unknown => {
-  const { expressionSource, globalScope, jinjaEvaluator } = options;
+  const { globalScope, jinjaEvaluator } = options;
 
   let result: unknown;
   try {
@@ -99,14 +101,10 @@ const evaluateJinjaExpressionString = (
       e.add_note(
         `While evaluating Jinja expression string: ${JSON.stringify(expression)}`,
       );
-      e.add_note(
-        `Expression definition attribute: ${calculateAttrXPath(expressionSource)}`,
-      );
       throw e;
     }
-    throw new InvalidAttributeExpressionError({
+    throw new InvalidJinjaExpressionError({
       expressionString: expression,
-      expressionDefinitionAttribute: expressionSource,
       cause: e as Error,
     });
   }
@@ -405,15 +403,15 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     );
   }
 
-  renderAttributeExpression(expressionSource: Attr): void {
+  renderJinjaExpressionAttribute(expressionSource: Attr): void {
     const {
       disallowedExpressionAttributes,
       renderedAttributes,
       jinjaGlobalScope,
       jinjaEvaluator,
     } = this;
-    const expressionString = expressionSource.value;
-    if (expressionString === null) {
+    const statementString = expressionSource.value;
+    if (statementString === null) {
       console.debug(
         `Skipping null expression attribute: ${calculateAttrXPath(expressionSource)}`,
       );
@@ -431,21 +429,67 @@ current expression string: ${JSON.stringify(expressionString)}.`,
 
     if (disallowedExpressionAttributes.has(expressionSource)) {
       throw new CircularAttributeSettingExpressionError({
-        expressionString,
+        expressionString: statementString,
         expressionDefinitionAttribute: expressionSource,
         dependencyChain: Array.from(disallowedExpressionAttributes.values()),
       });
     }
 
+    const ownerElement = expressionSource.ownerElement;
+    if (ownerElement === null) {
+      throw new InternalInterpreterError(
+        `Can't render an attribute expression for attribute that's not part of \
+an element!  Attribute name: ${JSON.stringify(expressionSource.name)}, \
+expression: ${JSON.stringify(statementString)}`,
+      );
+    }
+
+    const expressionAttributeLocalName =
+      this.documentEvaluationInformation.getAttrLocalName(expressionSource);
+    let outputAttributeQualifiedName =
+      this.documentEvaluationInformation.getAttrLocalName(expressionSource);
+    for (const attribute of ownerElement.attributes) {
+      if (
+        this.documentEvaluationInformation.getAttrNamespaceUri(attribute) ===
+          csvg_xml.attributes.attribute_expression.output_attribute_name
+            .namespaceUri &&
+        this.documentEvaluationInformation.getAttrLocalName(attribute) ===
+          expressionAttributeLocalName
+      ) {
+        outputAttributeQualifiedName = attribute.value;
+        break;
+      }
+    }
+    if (
+      !this.documentEvaluationInformation.isValidOutputAttributeQualifiedName(
+        outputAttributeQualifiedName,
+      )
+    ) {
+      const cause = new InvalidStringValueError(
+        'Invalid output attribute qualified name!',
+        {
+          allowedValuesDescription:
+            DocumentEvaluationInformation.attributeValidOutputQualifiedNameDescription,
+          value: statementString,
+        },
+      );
+      throw new InvalidAttributeExpressionError({
+        expressionString: statementString,
+        expressionDefinitionAttribute: expressionSource,
+        cause,
+      });
+    }
+    const valueExpressionString = expressionSource.value;
+
     this.addLastExpressionDependencyOnExpressionAttribute(
       expressionSource,
-      expressionString,
+      statementString,
     );
 
     disallowedExpressionAttributes.add(expressionSource);
     this.expressionsUnderEvaluation.push(expressionSource);
 
-    const expressionValue = evaluateJinjaTemplateString(expressionString, {
+    const expressionValue = evaluateJinjaTemplateString(valueExpressionString, {
       expressionSource,
       globalScope: jinjaGlobalScope,
       jinjaEvaluator,
@@ -459,27 +503,19 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     }
     disallowedExpressionAttributes.delete(expressionSource);
 
-    const ownerElement = expressionSource.ownerElement;
-    if (ownerElement === null) {
-      throw new InternalInterpreterError(
-        `Can't render an attribute expression for attribute that's not part of \
-an element!  Attribute name: ${expressionSource.name}, \
-expression: ${JSON.stringify(expressionString)}`,
-      );
+    // Avoid triggering `MutationObserver` updates:
+    const skipDomUpdate =
+      ownerElement.getAttribute(outputAttributeQualifiedName) ===
+      expressionValue;
+    if (!skipDomUpdate) {
+      ownerElement.setAttribute(outputAttributeQualifiedName, expressionValue);
     }
 
-    // Avoid triggering `MutationObserver` updates:
-    if (
-      ownerElement.getAttribute(expressionSource.localName) !== expressionValue
-    ) {
-      ownerElement.setAttribute(expressionSource.localName, expressionValue);
-    }
-    console.debug('Rendered expression attribute.', {
+    console.debug('Rendered Jinja expression attribute.', {
       expressionAttribute: expressionSource,
+      outputAttributeQualifiedName,
       value: expressionValue,
-      skippingDomUpdateWhichIsNoOp:
-        ownerElement.getAttribute(expressionSource.localName) ===
-        expressionValue,
+      skippingDomUpdateWhichIsNoOp: skipDomUpdate,
       reverseDependencies:
         this.reverseDependencies.attributeToReverseDependencies
           .get(expressionSource)
@@ -525,7 +561,7 @@ expression: ${JSON.stringify(expressionString)}`,
 
     // Render attribute expressions:
     for (const attribute of referencedElement.jinjaExpressionAttributes) {
-      this.renderAttributeExpression(attribute);
+      this.renderJinjaExpressionAttribute(attribute);
     }
 
     console.debug('Rendered element.', {
@@ -556,10 +592,10 @@ expression: ${JSON.stringify(expressionString)}`,
       return result;
     }
 
-    const expressionAttribute =
-      this.documentEvaluationInformation.getConstExpressionAttr(constName);
+    const definition =
+      this.documentEvaluationInformation.getConstDefinition(constName);
 
-    if (typeof expressionAttribute === 'undefined') {
+    if (typeof definition === 'undefined') {
       throw new UndefinedConstantError({ constName });
     }
 
@@ -570,7 +606,7 @@ expression: ${JSON.stringify(expressionString)}`,
       });
     }
 
-    const expressionString = expressionAttribute.value;
+    const expressionString = definition.expressionString;
 
     this.addLastExpressionDependencyOnConst(constName, expressionString);
 
@@ -580,13 +616,15 @@ expression: ${JSON.stringify(expressionString)}`,
     let expressionValue: unknown;
     try {
       expressionValue = evaluateJinjaExpressionString(expressionString, {
-        expressionSource: expressionAttribute,
         globalScope: this.jinjaGlobalScope,
         jinjaEvaluator: this.jinjaEvaluator,
       });
     } catch (e) {
       if (e instanceof InvalidExpressionError) {
         e.add_note(`While evaluating constant ${JSON.stringify(constName)}`);
+        e.add_note(
+          `For constant defined in element at path: ${definition.getDefinitionXPath()}`,
+        );
       }
       throw e;
     }
@@ -627,7 +665,7 @@ expression: ${JSON.stringify(expressionString)}`,
 
   calculateInvalidatedCalculables(calculables: InvalidatedCalculables): void {
     for (const attr of calculables.expressionAttrs) {
-      this.renderAttributeExpression(attr);
+      this.renderJinjaExpressionAttribute(attr);
     }
   }
 

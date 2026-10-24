@@ -1,3 +1,5 @@
+export type { ConstDefinition } from './const-definition';
+export { DocumentEvaluationInformation } from './document-evaluation-information';
 export {
   DocumentReferencedElements,
   ReferencedElement,

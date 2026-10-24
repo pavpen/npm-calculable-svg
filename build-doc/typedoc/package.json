@@ -15,10 +15,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build-doc": "typedoc",
+    "build-doc": "node scripts/build-artefacts-for-typedoc.ts && typedoc && node scripts/add-post-typedoc-artefacts.ts",
     "test": "npm run build-doc"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "typedoc": "^0.28.20"
   }
 }

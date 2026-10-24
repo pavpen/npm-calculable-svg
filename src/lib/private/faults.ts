@@ -3,7 +3,6 @@ import type { GetElementPropertyExpression } from './get-element-property-expres
 
 export class InvalidGetElementPropertyExpressionError extends InvalidExpressionError {
   readonly expression: GetElementPropertyExpression;
-  readonly cause: Error | undefined;
 
   constructor({
     expression,
@@ -15,9 +14,9 @@ export class InvalidGetElementPropertyExpressionError extends InvalidExpressionE
     const causeMessage = cause ? `  Caused by ${cause}` : '';
     super(
       `Invalid get element property expression: ${expression}!${causeMessage}`,
+      { cause },
     );
 
     this.expression = expression;
-    this.cause = cause;
   }
 }

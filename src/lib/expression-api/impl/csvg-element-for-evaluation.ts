@@ -1,7 +1,7 @@
 import { CsvgDomRect as JsCsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions as JsCsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
 import type { EvaluationState } from '../../private/evaluation-helpers';
-import { csvg_namespace } from '../../xml-names';
+import { attribute_expression } from '../../private/expression-api/attribute-expression';
 import type { CsvgElement } from '../csvg-element';
 import { CsvgDomRectForEvaluation } from './csvg-dom-rect-for-evaluation';
 import { CsvgUsedStyleDimensionsForEvaluation } from './csvg-used-style-dimensions-for-evaluation';
@@ -19,14 +19,15 @@ export class CsvgElementForEvaluation {
   }
 
   getAttribute(qualifiedName: string): string | null {
-    if (!qualifiedName.includes(':')) {
-      const expressionAttribute = this.element.attributes.getNamedItemNS(
-        csvg_namespace.attributeExpression.jinja,
+    // Satisfy attribute dependendencies, before reading the attribute value:
+    const expressionAttribute =
+      attribute_expression.expressionAttributeForOutputAttributeQualifiedName(
+        this.element,
         qualifiedName,
+        this.evaluationState.documentEvaluationInformation,
       );
-      if (expressionAttribute !== null) {
-        this.evaluationState.renderAttributeExpression(expressionAttribute);
-      }
+    if (expressionAttribute !== null) {
+      this.evaluationState.renderJinjaExpressionAttribute(expressionAttribute);
     }
 
     return this.element.getAttribute(qualifiedName);

@@ -2,7 +2,7 @@ import {
   AttributeNotFoundError,
   InternalInterpreterError,
 } from '../api/faults';
-import { csvg_namespace } from '../xml-names';
+import { csvg_xml } from '../xml-api';
 import { InvalidGetElementPropertyExpressionError } from './faults';
 import { NonIterableElementStringSet } from './helpers/element-string-set';
 import { calculateElementXPath } from './xpath-helpers';
@@ -151,7 +151,7 @@ without an attribute name!  Expression: ${this.toString()}.`,
     }
 
     const attribute = this.element.attributes.getNamedItemNS(
-      csvg_namespace.attributeExpression.jinja,
+      csvg_xml.attributes.attribute_expression.jinja.namespaceUri,
       attributeName,
     );
     if (attribute === null) {

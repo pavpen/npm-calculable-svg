@@ -1,19 +1,23 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
-    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
-    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
-    attrExpr:viewBox="
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    xmlns:const-name="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/const-name"
+    attr-expr:viewbox="
         {{ document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}
         {{ document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}
         {{ document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}
         {{ document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
+    attr-output-name:viewbox="viewBox"
 >
     <!--
         https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#options
         are not stable, yet.  We manually calculate the stroke bounding box above.
     -->
     <title>The text 'The unfortunate label' inside an ellipse</title>
+    <!-- Adding the following script renders calculables in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
     <style>
         .label {
@@ -30,28 +34,34 @@
         }
     </style>
     <csvg:consts
-        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
-        constExpr:labelWidth="
+        const-name:content-bbox="contentBBox"
+        const-expr:content-bbox="document.localIdToElement.get('content').getBBox()"
+        const-name:label-width="labelWidth"
+        const-expr:label-width="
             document.localIdToElement.get('label').getBBox().width +
             document.localIdToElement.get('label').getUsedStyleDimensions().paddingLeftPx +
             document.localIdToElement.get('label').getUsedStyleDimensions().paddingRightPx
             "
-        constExpr:labelHeight="
+        const-name:label-height="labelHeight"
+        const-expr:label-height="
             document.localIdToElement.get('label').getBBox().height +
             document.localIdToElement.get('label').getUsedStyleDimensions().paddingTopPx +
             document.localIdToElement.get('label').getUsedStyleDimensions().paddingBottomPx
             "
-        constExpr:labelMiddleY="
+        const-name:label-middle-y="labelMiddleY"
+        const-expr:label-middle-y="
             document.localIdToElement.get('label').getBBox().y +
             document.localIdToElement.get('label').getBBox().height / 2
             "
-        constExpr:semiVerticalAxis="
+        const-name:semi-vertical-axis="semiVerticalAxis"
+        const-expr:semi-vertical-axis="
             document.getConst('labelHeight') / 2 +
             Math.max(
                 document.localIdToElement.get('label').getUsedStyleDimensions().paddingTopPx,
                 document.localIdToElement.get('label').getUsedStyleDimensions().paddingBottomPx
             )"
-        constExpr:semiHorizontalAxis="
+        const-name:semi-horizontal-axis="semiHorizontalAxis"
+        const-expr:semi-horizontal-axis="
             document.getConst('labelWidth') /
             Math.sqrt(Math.abs(
                 4 -
@@ -59,14 +69,15 @@
                 (document.getConst('semiVerticalAxis') * document.getConst('semiVerticalAxis'))
             ))
             "
-        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
+        const-name:border-stroke-width-px="borderStrokeWidthPx"
+        const-expr:border-stroke-width-px="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
     />
     <g csvg:doc-local-id="content">
         <ellipse csvg:doc-local-id="border" class="border"
             cx="0"
-            attrExpr:cy="{{ document.getConst('labelMiddleY') }}"
-            attrExpr:rx="{{ document.getConst('semiHorizontalAxis') }}"
-            attrExpr:ry="{{ document.getConst('semiVerticalAxis') }}" />
+            attr-expr:cy="{{ document.getConst('labelMiddleY') }}"
+            attr-expr:rx="{{ document.getConst('semiHorizontalAxis') }}"
+            attr-expr:ry="{{ document.getConst('semiVerticalAxis') }}" />
         <text csvg:doc-local-id="label" class="label" text-anchor="middle">
             The unfortunate label</text>
     </g>

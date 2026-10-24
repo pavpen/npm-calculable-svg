@@ -1,12 +1,12 @@
 import { CsvgDomRect, type CsvgDomRectProperties } from '../api/csvg-dom-rect';
 import { AttributeNotFoundError } from '../api/faults';
+import type { DocumentEvaluationInformation } from '../api/internal/document-evaluation-information';
 import type {
   DocumentReferencedElements,
   ReferencedElement,
 } from '../api/internal/document-referenced-elements';
-import { csvg_namespace } from '../xml-names';
+import { csvg_xml } from '../xml-api';
 import type { AttributeDependencies } from './attribute-dependencies';
-import type { DocumentEvaluationInformation } from './document-evaluation-information';
 import {
   type CsvgDocument,
   type CsvgElement,
@@ -161,7 +161,7 @@ const createDependencyBuildingEnvironment = ({
         if (
           !qualifiedName.includes(':') &&
           element.hasAttributeNS(
-            csvg_namespace.attributeExpression.jinja,
+            csvg_xml.attributes.attribute_expression.jinja.namespaceUri,
             qualifiedName,
           )
         ) {

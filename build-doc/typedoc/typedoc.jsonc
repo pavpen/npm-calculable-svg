@@ -3,6 +3,15 @@
   "tsconfig": "../../tsconfig.json",
   "name": "🏗Calculable SVG SDK",
   "entryPointStrategy": "Expand",
-  "out": "../../dist/doc"
-  // "build-doc": "typedoc --tsconfig ../../tsconfig.json --name \"🏗Calculable SVG SDK\" --entryPointStrategy Expand ../../src"
+  "out": "../../dist/doc",
+  "jsDocCompatibility": {
+    "exampleTag": false
+  },
+  // See
+  // <https://markdown-it.github.io/markdown-it/interfaces/MarkdownItOptions.html>:
+  "markdownItOptions": {
+    "html": true,
+    "linkify": true
+  },
+  "customCss": "assets/extra-style.css"
 }

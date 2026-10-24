@@ -1,0 +1,28 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attr-name:viewbox="viewBox"
+    attr-expr:viewbox="
+      {{- Math.round(document.getConst('labelBBox').x) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').y) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').width) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').height) }}"
+>
+    <!--
+        When SVG is embedded in an HTML document, the browser may parse it
+        using HTML, rather than XML parsing rules.  In this case attribute
+        names are lowecased, and namespace definition attributes are ignored.
+        In the above 'attr-expr:viewbox' expression, we use
+        `attr-name:viewbox` to capitalize the name of the output attribute.
+    -->
+    <title>The text 'The unfortunate label' with a calculated bounding box</title>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
+    <csvg:consts
+        const-expr:labelBBox="document.localIdToElement.get('label').getBBox()"
+    />
+    <text csvg:doc-local-id="label" class="label" text-anchor="middle">
+        The unfortunate label</text>
+</svg>

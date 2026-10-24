@@ -1,15 +1,17 @@
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
-    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
-    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
-    attrExpr:viewBox="
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    attr-expr:viewbox="
         {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
         {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
         {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
         {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
+    attr-output-name:viewbox="viewBox"
 >
     <title>The text 'Start' inside an octagonal border</title>
+    <!-- Adding the following script renders calculables in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
     <style>
         .label {
@@ -19,24 +21,33 @@
             stroke: #757575; 
         }
     </style>
-    <csvg:consts
-        constExpr:padding="10"
-        constExpr:fontSize="document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx"
-        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
-        constExpr:octagonSideLength="
+    <csvg:consts>
+        <csvg:const csvg:name="padding">10</csvg:const>
+        <csvg:const csvg:name="fontSize">
+            document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx
+        </csvg:const>
+        <csvg:const csvg:name="borderStrokeWidthPx">
+            document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx
+        </csvg:const>
+        <csvg:const csvg:name="octagonSideLength">
             Math.max(
                 (document.localIdToElement.get('label').getBBox().width
                     - 2 * document.getConst('padding')
                 ) / (1 + 2 / Math.sqrt(2)),
                 document.getConst('fontSize')
-            )"
-        constExpr:octagonSlantedSideProjection="document.getConst('octagonSideLength') / Math.sqrt(2)"
-        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
-    />
+            )
+        </csvg:const>
+        <csvg:const csvg:name="octagonSlantedSideProjection">
+            document.getConst('octagonSideLength') / Math.sqrt(2)
+        </csvg:const>
+        <csvg:const csvg:name="contentBBox">
+            document.localIdToElement.get('content').getBBox()
+        </csvg:const>
+    </csvg:consts>
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
         <path csvg:doc-local-id="border" class="border"
-            attrExpr:d="
+            attr-expr:d="
             {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
             {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
             {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
@@ -48,8 +59,8 @@
             z"
             stroke="#000" fill="none" />
         <text csvg:doc-local-id="label" class="label"
-            attrExpr:x="{{ document.getConst('padding') }}"
-            attrExpr:y="{{ document.getConst('fontSize') / 2 }}"
+            attr-expr:x="{{ document.getConst('padding') }}"
+            attr-expr:y="{{ document.getConst('fontSize') / 2 }}"
             text-anchor="start">
             Start</text>
     </g>

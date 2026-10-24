@@ -1,0 +1,24 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+>
+    <title>Example constant expression</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document-debug.js"></script>
+    <csvg:consts
+        attr-expr:max-int8="{{ document.getConst('overMaxInt8') - 1 }}"
+        attr-expr:max-int64="{{ document.getConst('overMaxInt64') - 1 }}"
+    >
+        <csvg:const csvg:name="overMaxInt8">2 * 2 * 2 * 2 * 2 * 2 * 2 * 2</csvg:const>
+        <csvg:const csvg:name="overMaxInt64">
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8') *
+            document.getConst('overMaxInt8')
+        </csvg:const>
+    </csvg:consts>
+</svg>

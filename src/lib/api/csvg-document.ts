@@ -1,11 +1,12 @@
 import { AttributeDependencies } from '../private/attribute-dependencies';
 import { AttributeDependencyCalculator } from '../private/attribute-dependency-calculator';
-import { DocumentEvaluationInformation } from '../private/document-evaluation-information';
 import { EvaluationState } from '../private/evaluation-helpers';
 import { JinjaEvaluator } from '../private/jinja-evaluator';
 import { InvalidatedCalculables } from '../private/reverse-dependencies/invalidated-calculables';
-import { csvg_attribute_names, csvg_namespace } from '../xml-names';
-import { InvalidAttributeValue } from './faults';
+import { calculateElementXPath } from '../private/xpath-helpers';
+import { csvg_xml } from '../xml-api';
+import { InvalidAttributeValueError } from './faults';
+import { DocumentEvaluationInformation } from './internal/document-evaluation-information';
 
 namespace options_defaults {
   export const liveUpdate = true;
@@ -25,24 +26,46 @@ export class CsvgDocumentOptions {
       styleLiveUpdateDelayMillis ?? options_defaults.styleLiveUpdateDelayMillis;
   }
 
-  calculateFromRootNode(rootNode: Element | null): void {
+  calculateFromRootNode(
+    rootNode: Element | null,
+    evaluationInformation: DocumentEvaluationInformation,
+  ): void {
     if (rootNode === null) {
       this.liveUpdate = options_defaults.liveUpdate;
       this.styleLiveUpdateDelayMillis =
         options_defaults.styleLiveUpdateDelayMillis;
     } else {
-      this.liveUpdate = rootNodeGetLiveUpdateOption(rootNode);
-      this.styleLiveUpdateDelayMillis =
-        rootNodeGetStyleUpdateDelayMillis(rootNode);
+      this.liveUpdate = rootNodeGetLiveUpdateOption(
+        rootNode,
+        evaluationInformation,
+      );
+      this.styleLiveUpdateDelayMillis = rootNodeGetStyleUpdateDelayMillis(
+        rootNode,
+        evaluationInformation,
+      );
     }
   }
 }
 
-const rootNodeGetLiveUpdateOption = (rootNode: Element): boolean => {
-  const attributeValue = rootNode.getAttributeNS(
-    csvg_namespace.namespace,
-    csvg_attribute_names.liveUpdate,
-  );
+const rootNodeGetLiveUpdateOption = (
+  rootNode: Element,
+  evaluationInformation: DocumentEvaluationInformation,
+): boolean => {
+  const targetAttributeNamespaceUri =
+    csvg_xml.elements.svg.attributes.live_update.namespaceUri;
+  const targetAttributeName =
+    csvg_xml.elements.svg.attributes.live_update.attributeName;
+  let attributeValue = null;
+  for (const attribute of rootNode.attributes) {
+    if (
+      evaluationInformation.getAttrNamespaceUri(attribute) ===
+        targetAttributeNamespaceUri &&
+      evaluationInformation.getAttrLocalName(attribute) === targetAttributeName
+    ) {
+      attributeValue = attribute.value;
+      break;
+    }
+  }
 
   switch (attributeValue) {
     case null:
@@ -51,20 +74,34 @@ const rootNodeGetLiveUpdateOption = (rootNode: Element): boolean => {
     case 'false':
       return false;
     default:
-      throw new InvalidAttributeValue({
-        name: csvg_attribute_names.liveUpdate,
-        namespace: csvg_namespace.namespace,
+      throw new InvalidAttributeValueError({
+        attributeName: targetAttributeName,
+        namespaceUri: targetAttributeNamespaceUri,
         value: attributeValue,
         allowedValues: [null, 'true', 'false'],
       });
   }
 };
 
-const rootNodeGetStyleUpdateDelayMillis = (rootNode: Element): number => {
-  const attributeValue = rootNode.getAttributeNS(
-    csvg_namespace.namespace,
-    csvg_attribute_names.styleUpdateDelayMillis,
-  );
+const rootNodeGetStyleUpdateDelayMillis = (
+  rootNode: Element,
+  evaluationInformation: DocumentEvaluationInformation,
+): number => {
+  const targetAttributeNamespaceUri =
+    csvg_xml.elements.svg.attributes.style_update_delay_millis.namespaceUri;
+  const targetAttributeName =
+    csvg_xml.elements.svg.attributes.style_update_delay_millis.attributeName;
+  let attributeValue = null;
+  for (const attribute of rootNode.attributes) {
+    if (
+      evaluationInformation.getAttrNamespaceUri(attribute) ===
+        targetAttributeNamespaceUri &&
+      evaluationInformation.getAttrLocalName(attribute) === targetAttributeName
+    ) {
+      attributeValue = attribute.value;
+      break;
+    }
+  }
 
   if (attributeValue === null) {
     return 10;
@@ -73,9 +110,9 @@ const rootNodeGetStyleUpdateDelayMillis = (rootNode: Element): number => {
   const result = Number(attributeValue);
 
   if (Number.isNaN(result) || result < 0) {
-    throw new InvalidAttributeValue({
-      name: csvg_attribute_names.styleUpdateDelayMillis,
-      namespace: csvg_namespace.namespace,
+    throw new InvalidAttributeValueError({
+      attributeName: targetAttributeName,
+      namespaceUri: targetAttributeNamespaceUri,
       value: attributeValue,
       allowedValuesDescription: 'non-negative scalars',
     });
@@ -84,10 +121,22 @@ const rootNodeGetStyleUpdateDelayMillis = (rootNode: Element): number => {
   return result;
 };
 
+type CsvgDocumentPrivateConstructorKey = symbol;
+interface CsvgDocumentGlobalThis {
+  $singletonsPavpenDevCsvgDocument: CsvgDocumentClassSingletons | undefined;
+}
+interface CsvgDocumentClassSingletons {
+  svgElementToCsvgDocument: WeakMap<SVGElement, CsvgDocument>;
+}
+
 export class CsvgDocument {
+  static #privateConstructorKey: CsvgDocumentPrivateConstructorKey = Symbol(
+    'privateConstructorKey',
+  );
+
   private readonly evaluationInformation: DocumentEvaluationInformation;
   private readonly evaluationState: EvaluationState;
-  private readonly document: Document;
+  private readonly svgElement: SVGElement;
   private readonly options: CsvgDocumentOptions;
   private mutationObserver: MutationObserver = new MutationObserver(
     this.createHandleDocumentMutationsCallback(),
@@ -95,12 +144,47 @@ export class CsvgDocument {
   private pollStyleUpdatesTimeoutId: ReturnType<typeof setTimeout> | undefined =
     undefined;
 
-  constructor(document: Document) {
-    this.document = document;
+  static forSvgElement(svgElement: SVGElement): CsvgDocument {
+    let classSingletons = (globalThis as unknown as CsvgDocumentGlobalThis)
+      .$singletonsPavpenDevCsvgDocument;
+    if (typeof classSingletons === 'undefined') {
+      classSingletons = {
+        svgElementToCsvgDocument: new WeakMap<SVGElement, CsvgDocument>(),
+      };
+      (
+        globalThis as unknown as CsvgDocumentGlobalThis
+      ).$singletonsPavpenDevCsvgDocument = classSingletons;
+    }
+    const svgElementToCsvgDocument = classSingletons.svgElementToCsvgDocument;
+    let result = svgElementToCsvgDocument.get(svgElement);
+
+    if (typeof result === 'undefined') {
+      result = new CsvgDocument(
+        CsvgDocument.#privateConstructorKey,
+        svgElement,
+      );
+      svgElementToCsvgDocument.set(svgElement, result);
+    }
+
+    return result;
+  }
+
+  constructor(
+    privateConstructorKey: CsvgDocumentPrivateConstructorKey,
+    svgElement: SVGElement,
+  ) {
+    if (privateConstructorKey !== CsvgDocument.#privateConstructorKey) {
+      throw Error(
+        `Don't construct CsvgDocument directly; use \
+\`CsvgDocument.forSvgElement()\` instead.`,
+      );
+    }
+
+    this.svgElement = svgElement;
 
     // Calculate expression dependencies, and other information:
     const evaluationInformation = new DocumentEvaluationInformation();
-    evaluationInformation.calculateForDocument(document);
+    evaluationInformation.calculateForSvgElement(svgElement);
 
     this.evaluationInformation = evaluationInformation;
 
@@ -114,28 +198,19 @@ export class CsvgDocument {
     this.options = new CsvgDocumentOptions({});
   }
 
-  private getRootNode(): Element | null {
-    const rootNodes = this.document.children;
-
-    if (rootNodes.length > 1) {
-      console.warn(
-        `Calculabe SVG Document has multiple root nodes \
-(${rootNodes.length})!  Using default configuration.  Document:`,
-        this.document,
-      );
-    } else if (rootNodes.length < 1) {
-      return null;
-    }
-    return rootNodes[0];
-  }
-
   private evaluateOnce() {
     // Calculate expression dependencies, and other information:
-    console.groupCollapsed('Evaluating document.');
-    try {
-      this.evaluationInformation.calculateForDocument(this.document);
+    console.groupCollapsed('Evaluating Calculable SVG.', {
+      path: calculateElementXPath(this.svgElement),
+    });
 
-      this.options.calculateFromRootNode(this.getRootNode());
+    try {
+      this.evaluationInformation.calculateForSvgElement(this.svgElement);
+
+      this.options.calculateFromRootNode(
+        this.svgElement,
+        this.evaluationInformation,
+      );
 
       for (const element of this.evaluationInformation.getRootReferencedElements()) {
         this.evaluationState.renderElement(element.element);
@@ -150,7 +225,10 @@ export class CsvgDocument {
   }
 
   render() {
-    this.options.calculateFromRootNode(this.getRootNode());
+    this.options.calculateFromRootNode(
+      this.svgElement,
+      this.evaluationInformation,
+    );
     this.evaluateOnce();
 
     if (this.options.liveUpdate) {
@@ -172,10 +250,10 @@ export class CsvgDocument {
       _mutationList,
       mutationObserver,
     ) => {
-      if (this.document.isConnected) {
+      if (this.svgElement.isConnected) {
         console.debug(
           'Re-evaluating Calculable SVG document:',
-          this.document,
+          this.svgElement,
           ', due to mutations: ',
           _mutationList,
         );
@@ -192,7 +270,7 @@ export class CsvgDocument {
         // handled by the parent document.
         console.debug(
           'Disconnecting MutationObserver from document:',
-          this.document,
+          this.svgElement,
         );
 
         mutationObserver.disconnect();
@@ -208,7 +286,7 @@ export class CsvgDocument {
   }
 
   private resumeMutationObserver(): void {
-    this.mutationObserver.observe(this.document, {
+    this.mutationObserver.observe(this.svgElement, {
       attributes: true,
       childList: true,
       subtree: true,
@@ -219,7 +297,7 @@ export class CsvgDocument {
     this.resumeMutationObserver();
 
     console.debug('Watching for document mutations.', {
-      document: this.document,
+      document: this.svgElement,
     });
   }
 
@@ -298,7 +376,7 @@ ID for a style updates poll!  Ignoring request.',
     );
 
     console.debug('Watching for style updates.', {
-      document: this.document,
+      document: this.svgElement,
       delayMillis: this.options.styleLiveUpdateDelayMillis,
     });
   }
@@ -307,7 +385,7 @@ ID for a style updates poll!  Ignoring request.',
     // Calculate expression dependencies:
     console.debug(`Calculating expression dependency graph.`);
 
-    this.evaluationInformation.calculateForDocument(this.document);
+    this.evaluationInformation.calculateForSvgElement(this.svgElement);
 
     const jinjaEvaluator = new JinjaEvaluator();
     const attributeExpressionDependencies = new AttributeDependencies();

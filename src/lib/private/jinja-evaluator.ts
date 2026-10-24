@@ -37,6 +37,7 @@ const interpreterToJavaScriptValue: (
         }
         throw new InvalidExpressionError(
           `Result object (${typeof value}) has disallowed property named: ${JSON.stringify(propertyName)}`,
+          {},
         );
       }
       resultObject[propertyName] = interpreterToJavaScriptValue(propertyValue);
@@ -87,6 +88,7 @@ export class JinjaEvaluator {
         if (typeof propertyName !== 'string' || propertyName in resultObject) {
           throw new InvalidExpressionError(
             `Result object (${value}) has disallowed property named: ${JSON.stringify(propertyName)}`,
+            {},
           );
         }
         resultObject[propertyName] =
@@ -134,11 +136,13 @@ export class JinjaEvaluator {
     if (program.body.length < 1) {
       throw new InvalidExpressionError(
         `Unexpected empty expression: ${JSON.stringify(expressionString)}`,
+        {},
       );
     }
     if (program.body.length > 1) {
       throw new UnexpectedTrailingExpressionError(
         `Unexpected trailing expression in: ${JSON.stringify(expressionString)}!`,
+        {},
       );
     }
 
