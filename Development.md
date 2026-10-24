@@ -40,7 +40,7 @@ npm run check
 npm run format
 ```
 
-### Preview samples, and browser tests from a development server
+### Preview examples, and browser tests from a development server
 
 The app will be available at <http://localhost:8080>.
 

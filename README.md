@@ -28,23 +28,25 @@ elliptical speech bubble around this given text label."
 The `<svg/>` `viewBox` attribute, and border dimensions in the following
 example are calculated from the text layout bounding box.
 
-![Example text with octagonal border rendered by CSVG evaluation](build-doc/examples/text-with-octagonal-border.svg):
+![Example text with octagonal border rendered by CSVG evaluation](examples/text-with-octagonal-border.svg):
 
 ```svg
 <svg
     xmlns="http://www.w3.org/2000/svg"
     xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
-    xmlns:attrExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
     xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
-    attrExpr:viewBox="
+    attr-expr:viewbox="
         {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
         {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
         {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
         {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
+    attr-output-name:viewbox="viewBox"
 >
     <title>The text 'Start' inside an octagonal border</title>
     <!-- Adding the following script renders calculables in this document: -->
-    <script crossorigin="anonymous" href="https://github.com/pavpen/npm-calculable-svg/releases/download/v0.0.0-alpha.0/evaluate-for-current-document-debug.js"></script>
+    <script crossorigin="anonymous" href="../../dist/evaluate-for-current-document-debug.js"></script>
     <style>
         .label {
             font-size: 48px;
@@ -53,24 +55,33 @@ example are calculated from the text layout bounding box.
             stroke: #757575; 
         }
     </style>
-    <csvg:consts
-        constExpr:padding="10"
-        constExpr:fontSize="document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx"
-        constExpr:borderStrokeWidthPx="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
-        constExpr:octagonSideLength="
+    <csvg:consts>
+        <csvg:const csvg:name="padding">10</csvg:const>
+        <csvg:const csvg:name="fontSize">
+          document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx
+        </csvg:const>
+        <csvg:const csvg:name="borderStrokeWidthPx">
+          document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx
+        </csvg:const>
+        <csvg:const csvg:name="octagonSideLength">
             Math.max(
                 (document.localIdToElement.get('label').getBBox().width
                     - 2 * document.getConst('padding')
                 ) / (1 + 2 / Math.sqrt(2)),
                 document.getConst('fontSize')
-            )"
-        constExpr:octagonSlantedSideProjection="document.getConst('octagonSideLength') / Math.sqrt(2)"
-        constExpr:contentBBox="document.localIdToElement.get('content').getBBox()"
-    />
+            )
+        </csvg:const>
+        <csvg:const csvg:name="octagonSlantedSideProjection">
+          document.getConst('octagonSideLength') / Math.sqrt(2)
+        </csvg:const>
+        <csvg:const csvg:name="contentBBox">
+          document.localIdToElement.get('content').getBBox()
+        </csvg:const>
+    <csvg:consts/>
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
         <path csvg:doc-local-id="border" class="border"
-            attrExpr:d="
+            attr-expr:d="
             {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
             {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
             {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
@@ -82,8 +93,8 @@ example are calculated from the text layout bounding box.
             z"
             stroke="#000" fill="none" />
         <text csvg:doc-local-id="label" class="label"
-            attrExpr:x="{{ document.getConst('padding') }}"
-            attrExpr:y="{{ document.getConst('fontSize') / 2 }}"
+            attr-expr:x="{{ document.getConst('padding') }}"
+            attr-expr:y="{{ document.getConst('fontSize') / 2 }}"
             text-anchor="start">
             Start</text>
     </g>
@@ -123,7 +134,12 @@ To solve the above challenges we:
     depend on the bounding box of the `<rect/>` element.)
 * Keep the file format valid SVG.
 * Implement evaluating the expressions in an SVG document (which we call
-  expression resolution) in a browser.
+  expression resolution) in a browser.  (This includes rendering a CSVG parsed
+  by an HTML, rather than by an XML parser.)
+* Minimize extra mark-up required for Calculable SVG.  (It's common to add
+  extra attributes to elements on order to store data.  However, additional
+  changes, such as addring extra elements have the potential to interfere with
+  CSS selectors, and user code processing the DOM tree.)
 * Allow expression resolution statically for a single state (e.g., when fonts,
   and text sizes are fixed).  (This follows from the previous point, but we
   want to make the process simpler to implement when possible.)

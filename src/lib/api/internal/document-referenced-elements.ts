@@ -1,6 +1,7 @@
 import { calculateElementXPath } from '../../private/xpath-helpers';
-import { csvg_namespace } from '../../xml-names';
+import { csvg_xml } from '../../xml-api';
 import { InternalInterpreterError } from '../faults';
+import type { DocumentEvaluationInformation } from './document-evaluation-information';
 
 /**
  * Debug representation of a CSVG referenced element
@@ -65,9 +66,14 @@ export class ReferencedElement {
  * @internal
  */
 export class DocumentReferencedElements {
+  private readonly documentEvaluationInformation: DocumentEvaluationInformation;
   private readonly elementToReferencedElement: Map<Element, ReferencedElement> =
     new Map();
   private readonly _rootReferencedElements: Set<ReferencedElement> = new Set();
+
+  constructor(documentEvaluationInformation: DocumentEvaluationInformation) {
+    this.documentEvaluationInformation = documentEvaluationInformation;
+  }
 
   getReferencedElement(element: Element): ReferencedElement | undefined {
     return this.elementToReferencedElement.get(element);
@@ -125,18 +131,30 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
     return undefined;
   }
 
+  private collectElementExpressionAttributes(
+    element: Element,
+    outputJinjaExpressionAttributes: Attr[],
+  ): void {
+    const evaluationInformation = this.documentEvaluationInformation;
+
+    for (const attribute of element.attributes) {
+      if (
+        evaluationInformation.getAttrNamespaceUri(attribute) ===
+        csvg_xml.attributes.attribute_expression.jinja.namespaceUri
+      ) {
+        outputJinjaExpressionAttributes.push(attribute);
+      }
+    }
+  }
+
   insertElementReference(element: Element): ReferencedElement {
     const existingReferencedElement = this.getReferencedElement(element);
     if (typeof existingReferencedElement !== 'undefined') {
       return existingReferencedElement;
     }
-    const jinjaExpressionAttributes: Attr[] = [];
 
-    for (const attribute of element.attributes) {
-      if (attribute.namespaceURI === csvg_namespace.attributeExpression.jinja) {
-        jinjaExpressionAttributes.push(attribute);
-      }
-    }
+    const jinjaExpressionAttributes: Attr[] = [];
+    this.collectElementExpressionAttributes(element, jinjaExpressionAttributes);
 
     const referencedElement = new ReferencedElement({
       element,
@@ -180,26 +198,27 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
    * @param element DOM tree to process
    */
   private collectExpressionAttributeElements(element: Element): void {
-    const jinjaExpressionAttributes = [];
+    const treeWalker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_ELEMENT,
+    );
+    do {
+      const currentElement = treeWalker.currentNode as Element;
+      const jinjaExpressionAttributes: Attr[] = [];
 
-    for (const attribute of element.attributes) {
-      if (attribute.namespaceURI !== csvg_namespace.attributeExpression.jinja) {
-        continue;
-      }
-      jinjaExpressionAttributes.push(attribute);
-    }
-
-    if (jinjaExpressionAttributes.length > 0) {
-      const referencedElement = new ReferencedElement({
-        element,
+      this.collectElementExpressionAttributes(
+        currentElement,
         jinjaExpressionAttributes,
-      });
-      this.addReferencedElement(referencedElement);
-    }
+      );
 
-    for (const childElement of element.children) {
-      this.collectExpressionAttributeElements(childElement);
-    }
+      if (jinjaExpressionAttributes.length > 0) {
+        const referencedElement = new ReferencedElement({
+          element: currentElement,
+          jinjaExpressionAttributes,
+        });
+        this.addReferencedElement(referencedElement);
+      }
+    } while (treeWalker.nextNode());
   }
 
   /**
@@ -210,13 +229,11 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
    * (e.g., when an element is evaluated because its bounding box is used in
    * an expression).
    */
-  rebuildFromExpressionAttributes(document: Document): void {
+  rebuildFromExpressionAttributes(svgElement: SVGElement): void {
     this.clear();
 
     // Collect elements referenced due to having expression attributes:
-    for (const element of document.children) {
-      this.collectExpressionAttributeElements(element);
-    }
+    this.collectExpressionAttributeElements(svgElement);
 
     // Calculate dependencies for collected elements:
     for (const referencedElement of this.referencedElements()) {

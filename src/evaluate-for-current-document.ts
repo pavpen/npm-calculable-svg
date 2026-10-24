@@ -1,8 +1,12 @@
 /**
- * Including this module in an SVG document (e.g., as a `<script/>` element)
- * causes Calculable SVG expressions in the SVG document to be resolved.
+ * @import { expression_api } from './index';
  *
- * Expression resolution is described [the README](../README.md).
+ * Including this module in a browser document (e.g., as a `<script/>`
+ * element) causes Calculable SVG expressions contained in
+ * [SVGElement](https://developer.mozilla.org/en-US/docs/Web/API/SVGElement)
+ * DOM sub-trees to be resolved.
+ *
+ * Expression resolution is described in {@link expression_api}.
  *
  * @module
  */

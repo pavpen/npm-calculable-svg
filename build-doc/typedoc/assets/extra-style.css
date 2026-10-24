@@ -1,0 +1,7 @@
+object {
+  /**
+   * Fixes Chrome-based browsers replacing transparent background with white
+   * in dark mode:
+   */
+  color-scheme: normal;
+}

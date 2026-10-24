@@ -10,28 +10,49 @@ export class CalculableSvgError extends Error {
   }
 }
 
-export class InvalidAttributeValue extends CalculableSvgError {
-  readonly name: string;
-  readonly namespace: string | undefined;
+export class InvalidStringValueError extends CalculableSvgError {
   readonly value: string | null;
   readonly allowedValues: Iterable<string | null> | undefined;
   readonly allowedValuesDescirption: string | undefined;
 
+  constructor(
+    message: string,
+    {
+      value,
+      allowedValues,
+      allowedValuesDescription,
+    }: {
+      value: string | null;
+      allowedValues?: Iterable<string | null> | undefined;
+      allowedValuesDescription?: string | undefined;
+    },
+  ) {
+    super(message);
+    this.value = value;
+    this.allowedValues = allowedValues;
+    this.allowedValuesDescirption = allowedValuesDescription;
+  }
+}
+
+export class InvalidAttributeValueError extends InvalidStringValueError {
+  readonly attributename: string;
+  readonly namespaceUri: string | undefined;
+
   constructor({
-    name,
-    namespace,
+    attributeName,
+    namespaceUri,
     value,
     allowedValues,
     allowedValuesDescription,
   }: {
-    name: string;
-    namespace: string | undefined;
+    attributeName: string;
+    namespaceUri: string | undefined;
     value: string | null;
     allowedValues?: Iterable<string | null> | undefined;
     allowedValuesDescription?: string | undefined;
   }) {
-    const namespaceMessage = namespace
-      ? ` in XML namespace ${JSON.stringify(namespace)}`
+    const namespaceMessage = namespaceUri
+      ? ` in XML namespace ${JSON.stringify(namespaceUri)}`
       : '';
     const allowedValuesMessage = `Allowed values: \
 ${allowedValuesDescription ?? ''}\
@@ -39,15 +60,13 @@ ${allowedValuesDescription && allowedValues ? ': ' : ''}\
 ${typeof allowedValues === 'undefined' ? '' : JSON.stringify(allowedValues)}`;
     super(
       `Invalid value (${JSON.stringify(value)}) for attribute \
-${JSON.stringify(name)}${namespaceMessage}!  \
+${JSON.stringify(attributeName)}${namespaceMessage}!  \
 ${allowedValuesMessage}`,
+      { value, allowedValues, allowedValuesDescription },
     );
 
-    this.name = name;
-    this.namespace = namespace;
-    this.value = value;
-    this.allowedValues = allowedValues;
-    this.allowedValuesDescirption = allowedValuesDescription;
+    this.attributename = attributeName;
+    this.namespaceUri = namespaceUri;
   }
 }
 
@@ -67,12 +86,47 @@ ${calculateElementXPath(element)}/@${attributeQualifiedName}`,
   }
 }
 
-export class InvalidExpressionError extends CalculableSvgError {}
+export class InvalidExpressionError extends CalculableSvgError {
+  readonly cause: Error | undefined;
+
+  constructor(
+    message: string,
+    {
+      cause,
+    }: {
+      cause?: Error | undefined;
+    },
+  ) {
+    super(message);
+
+    this.cause = cause;
+  }
+}
+
+export class InvalidJinjaExpressionError extends InvalidExpressionError {
+  readonly expressionString: string;
+
+  constructor({
+    expressionString,
+    cause,
+  }: {
+    expressionString: string;
+    cause: Error;
+  }) {
+    super(
+      `Invalid Jinja expression ${JSON.stringify(expressionString)}: ${cause}`,
+      { cause },
+    );
+
+    this.expressionString = expressionString;
+  }
+}
+
+export class InvalidId extends InvalidExpressionError {}
 
 export class InvalidAttributeExpressionError extends InvalidExpressionError {
   readonly expressionString: string;
   readonly expressionDefinitionAttribute: Attr;
-  readonly cause: Error | undefined;
 
   constructor({
     expressionString,
@@ -88,11 +142,11 @@ export class InvalidAttributeExpressionError extends InvalidExpressionError {
       `Invalid attribute expression: ${expressionString}, \
 defined in attribute ${calculateAttrXPath(expressionDefinitionAttribute)}!\
 ${causeMessage}`,
+      { cause },
     );
 
     this.expressionString = expressionString;
     this.expressionDefinitionAttribute = expressionDefinitionAttribute;
-    this.cause = cause;
   }
 }
 
@@ -124,7 +178,6 @@ ${causeMessage}`;
 
 export class UndefinedConstantError extends InvalidExpressionError {
   readonly constName: unknown;
-  readonly cause: Error | undefined;
 
   constructor({
     constName,
@@ -137,16 +190,15 @@ export class UndefinedConstantError extends InvalidExpressionError {
     super(
       `Accessed an undefined constant with name: ${JSON.stringify(constName)}!\
 ${causeMessage}`,
+      { cause },
     );
 
     this.constName = constName;
-    this.cause = cause;
   }
 }
 
 export class InvalidConstantExpressionError extends InvalidExpressionError {
   readonly constName: unknown;
-  readonly cause: Error | undefined;
 
   constructor(
     message: string,
@@ -158,10 +210,9 @@ export class InvalidConstantExpressionError extends InvalidExpressionError {
       cause?: Error | undefined;
     },
   ) {
-    super(message);
+    super(message, { cause });
 
     this.constName = constName;
-    this.cause = cause;
   }
 }
 
