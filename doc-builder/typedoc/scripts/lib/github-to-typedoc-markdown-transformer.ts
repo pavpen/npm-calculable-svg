@@ -36,6 +36,9 @@ export class GitHubToTypeDocMarkdownTransformer {
     const relativePathToInputDirComponents = path
       .relative(path.dirname(outputFilePath), path.dirname(inputFilePath))
       .split(path.sep);
+    const inputDirRelativeToProjectRootComponents = path
+      .relative(path.dirname(inputFilePath), this.projectPaths.projectRootDir)
+      .split(path.sep);
     const docSiteRootUrl = new URL(
       'https://pavpen.github.io/npm-calculable-svg/dev/',
     );
@@ -81,12 +84,20 @@ export class GitHubToTypeDocMarkdownTransformer {
           outputUrlString = inputUrlString;
         }
       } else {
-        outputUrlString = path.isAbsolute(inputUrlString)
-          ? inputUrlString
-          : path.posix.join(
-              ...relativePathToInputDirComponents,
-              inputUrlString,
-            );
+        if (path.isAbsolute(inputUrlString)) {
+          outputUrlString = inputUrlString;
+        } else {
+          outputUrlString = isImage
+            ? path.posix.join(
+                ...inputDirRelativeToProjectRootComponents,
+                'media',
+                path.basename(inputUrlString),
+              )
+            : path.posix.join(
+                ...relativePathToInputDirComponents,
+                inputUrlString,
+              );
+        }
       }
 
       return isImage
