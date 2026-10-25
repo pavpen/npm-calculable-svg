@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "author": "Pavel M. Penev",
-  "version": "1.0.0",
+  "version": "0.0.0-alpha.0-4-g6a763c8-dirty",
   "private": false,
   "type": "module",
   "scripts": {
@@ -33,10 +33,14 @@
     "test": "rstest",
     "test:watch": "rstest --watch",
     "update-packages:lib": "npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always",
-    "update-packages:build-doc": "cd build-doc/typedoc && npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always",
-    "update-packages": "npm run update-packages:lib && npm run update-packages:build-doc",
+    "update-packages:doc-builder": "cd doc-builder/typedoc && npm-check-updates --packageManager=npm --upgrade --cooldown=21d --doctor --install=always",
+    "update-packages": "npm run update-packages:lib && npm run update-packages:doc-builder",
     "build-changelog": "git-cliff",
-    "build-doc": "cd build-doc/typedoc && npm run build-doc"
+    "npm:update-version": "node scripts/update-packagejs-version.ts",
+    "doc:install": "cd doc-builder/typedoc && npm install",
+    "doc:build": "npm run build && npm run npm:update-version && cd doc-builder/typedoc && npm run build-doc",
+    "doc:build-versioned": "npm run doc:build && node scripts/move-doc-to-version-dir.ts",
+    "doc:build-all-versions": "npm run build && cd doc-builder/typedoc && npm run build-all-doc-versions"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -55,6 +59,7 @@
     "@rstest/playwright": "^0.12.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^26.6.5",
     "fast-xml-parser": "^5.11.2",
     "happy-dom": "^20.14.5",
     "npm-check-updates": "^23.1.1",

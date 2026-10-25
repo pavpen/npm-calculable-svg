@@ -3,7 +3,8 @@
   "tsconfig": "../../tsconfig.json",
   "name": "🏗Calculable SVG SDK",
   "entryPointStrategy": "Expand",
-  "out": "../../dist/doc",
+  "out": "../../dist/doc/dev",
+  "includeVersion": true,
   "jsDocCompatibility": {
     "exampleTag": false
   },

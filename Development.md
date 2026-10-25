@@ -16,6 +16,9 @@ repository.  However, code generation hasn't been necessary so far.
 
   # Install non-NPM dependencies for running unit tests:
   npm run test:install
+
+  # Install NPM dependencies for building documentation:
+  npm run doc:install
   ```
 
 * [Install Rust](https://rust-lang.org/tools/install/).
@@ -77,6 +80,12 @@ E.g., using the Docker container from
 sbx run --name=cursor-npm-calculable-svg
 ```
 
+## Build Documentation
+
+```bash
+npm run doc:build
+```
+
 ## Build, or Update `CHANGELOG.md`
 
 ```bash
@@ -121,14 +130,28 @@ npm run build-changelog
 
 ## Release
 
-* Lint: `npm npm run check; npm run format`
-* Build: `npm run build`
-* Unit test: `npm run test`
-* Re-build the ChangeLog: `git-cliff`
-* Revew [`CHANGELOG.md`](CHANGELOG.md)
+* Lint: `npm npm run check; npm run format`.
+* Build: `npm run build`.
+* Unit test: `npm run test`.
+* Build documentation (`npm run doc:build`), and review it.
 * Tag the release commit with a tag that consists of `'v'` + a
-  [semantic version](https://semver.org/)
+  [semantic version](https://semver.org/).
   * `git tag --annotate v0.0.0-alpha.0`
-  * `git push origin v0.0.0-alpha.0`
+* Update NPM `package.json` version: `npm run npm:update-version`.
+* Re-build the ChangeLog: `git-cliff`.
+* Revew [`CHANGELOG.md`](CHANGELOG.md).
+* Create a release commit.
+* Move the release tag to the release commit:
+
+  ```bash
+  git tag --delete v0.0.0-alpha.0 && \
+  git tag --annotate v.0.0.0-alpha.0
+  ```
+
+* Push the release commit (`git push`).
+* Push the commit tag (`git push origin v0.0.0-alpha.0`).
 * [Upload release artefacts](https://github.com/pavpen/npm-calculable-svg/releases/new)
   (`dist/*.js`, `dist/*.js.map`, `dist/*.ts`) to GitHub.
+* Trigger the
+  [`publish-doc.yaml` GitHub workflow](https://github.com/pavpen/npm-calculable-svg/actions/workflows/publish-doc.yaml)
+  to build, and publish release documentation.

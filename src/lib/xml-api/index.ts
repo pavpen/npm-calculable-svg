@@ -21,7 +21,7 @@ import type {
  *
  * @example
  * A CSVG document may look like:
- * {@include ../../../build-doc/build/xml-api/examples/text-with-octagonal-border.svg.md}
+ * {@include ../../../doc-builder/build/xml-api/examples/text-with-octagonal-border.svg.md}
  *
  * See:
  *
@@ -63,7 +63,7 @@ export namespace csvg_xml {
        * attribute below.
        *
        * @example
-       * {@include ../../../build-doc/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
+       * {@include ../../../doc-builder/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
        *
        * * The expression uses the
        *   [Jinja template language syntax](https://jinja.palletsprojects.com/en/stable/templates/).
@@ -112,7 +112,7 @@ export namespace csvg_xml {
        * Consider the `const-expr:labelBBox` expression below.
        *
        * @example
-       * {@include ../../../build-doc/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
+       * {@include ../../../doc-builder/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
        *
        * * The constant definition should occur as an attribute of a `<consts/>`
        *   element in the `"http://xmlns.pavpen.dev/calculable-svg/0.1"` XML
@@ -172,7 +172,7 @@ export namespace csvg_xml {
      * below.
      *
      * @example
-     * {@include ../../../build-doc/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
+     * {@include ../../../doc-builder/build/xml-api/examples/text-with-automatic-viewbox.svg.md}
      *
      * * The `doc-local-id` attribute can be added to an SVG element.
      * * Each value must be unique within the SVG document (but not across the
@@ -233,7 +233,7 @@ export namespace csvg_xml {
          * ```
          *
          * @example Style Live Update
-         * {@include ../../../build-doc/build/xml-api/examples/text-with-underbrace.svg.md}
+         * {@include ../../../doc-builder/build/xml-api/examples/text-with-underbrace.svg.md}
          */
         export namespace live_update {
           export const namespaceUri = csvgNamespaceUri;
@@ -290,7 +290,7 @@ export namespace csvg_xml {
      * ```
      *
      * @example Int64 Overflow
-     * {@include ../../../build-doc/build/xml-api/examples/int64-overflow.svg.md}
+     * {@include ../../../doc-builder/build/xml-api/examples/int64-overflow.svg.md}
      */
     export namespace csvg_const {
       export const namespaceUri = csvgNamespaceUri;
