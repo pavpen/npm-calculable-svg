@@ -1,0 +1,22 @@
+{
+  "entryPoints": ["version-selection-page.ts"],
+  "tsconfig": "tsconfig.json",
+  "readme": "none",
+  "name": "🏗Calculable SVG SDK",
+  "entryPointStrategy": "Expand",
+  "out": "../dist",
+  "includeVersion": false,
+  "visibilityFilters": {},
+  "validation": {
+    "invalidPath": false
+  },
+  "jsDocCompatibility": {
+    "exampleTag": false
+  },
+  // See
+  // <https://markdown-it.github.io/markdown-it/interfaces/MarkdownItOptions.html>:
+  "markdownItOptions": {
+    "html": true,
+    "linkify": true
+  }
+}

@@ -16,6 +16,7 @@
   "main": "index.js",
   "scripts": {
     "build-doc": "node scripts/build-artefacts-for-typedoc.ts && typedoc && node scripts/add-post-typedoc-artefacts.ts",
+    "build-all-doc-versions": "node scripts/build-all-versions.ts",
     "test": "npm run build-doc"
   },
   "devDependencies": {

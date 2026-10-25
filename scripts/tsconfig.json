@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "target": "ES2022",
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "useDefineForClassFields": true,
+
+    /* modules */
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "rootDir": ".",
+
+    /* type checking */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["."]
+}

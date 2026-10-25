@@ -4,8 +4,8 @@
 *.log*
 
 # Dist
-/build-doc/build/
-/build-doc/typedoc/node_modules/
+/doc-builder/build/
+/doc-builder/typedoc/node_modules/
 /dist/
 /node_modules
 /test-preview-dist/
