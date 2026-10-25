@@ -25,81 +25,60 @@ elliptical speech bubble around this given text label."
 
 ## Example
 
-The `<svg/>` `viewBox` attribute, and border dimensions in the following
-example are calculated from the text layout bounding box.
-
-![Example text with octagonal border rendered by CSVG evaluation](examples/text-with-octagonal-border.svg):
+The `<svg/>` `viewBox` attribute, and underline dimensions in the following
+example are calculated from the text bounding box.
 
 ```svg
-<svg
-    xmlns="http://www.w3.org/2000/svg"
-    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
     xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
-    xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
-    xmlns:constExpr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
-    attr-expr:viewbox="
-        {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
-        {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
-    attr-output-name:viewbox="viewBox"
->
-    <title>The text 'Start' inside an octagonal border</title>
+    xmlns:attr-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attr-name:viewbox="viewBox"
+    attr-expr:viewbox="{{ document.getConst('contentBBox').x }} {{ document.getConst('contentBBox').y }} {{ document.getConst('contentBBox').width }} {{ document.getConst('contentBBox').height }}"
+    viewBox="0 -51.27756118774414 711.7402954101562 65.67755889892578">
+    <title>The text "Important: Don't pay attention!", underlined</title>
     <!-- Adding the following script renders calculables in this document: -->
-    <script crossorigin="anonymous" href="../../dist/evaluate-for-current-document-debug.js"></script>
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js" />
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;display=swap');
         .label {
+            font-family: "Noto Serif", serif;
             font-size: 48px;
             stroke-width: 0.5px;
-            fill: #000;
-            stroke: #757575; 
+            fill: #000000;
+            stroke: #757575;
+            margin-bottom: 7.2px;
+        }
+        .underline-border {
+            stroke: #757575;
+            stroke-width: 4px;
+        }
+        .underline {
+            stroke: #fc0004;
+            stroke-width: 3px;
         }
     </style>
     <csvg:consts>
-        <csvg:const csvg:name="padding">10</csvg:const>
-        <csvg:const csvg:name="fontSize">
-          document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx
-        </csvg:const>
-        <csvg:const csvg:name="borderStrokeWidthPx">
-          document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx
-        </csvg:const>
-        <csvg:const csvg:name="octagonSideLength">
-            Math.max(
-                (document.localIdToElement.get('label').getBBox().width
-                    - 2 * document.getConst('padding')
-                ) / (1 + 2 / Math.sqrt(2)),
-                document.getConst('fontSize')
-            )
-        </csvg:const>
-        <csvg:const csvg:name="octagonSlantedSideProjection">
-          document.getConst('octagonSideLength') / Math.sqrt(2)
-        </csvg:const>
-        <csvg:const csvg:name="contentBBox">
-          document.localIdToElement.get('content').getBBox()
-        </csvg:const>
-    <csvg:consts/>
+        <csvg:const csvg:name="contentBBox">document.localIdToElement.get('content').getBBox()</csvg:const>
+        <csvg:const csvg:name="labelFontSizePx">
+            document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx</csvg:const>
+        <csvg:const csvg:name="labelMarginBottomPx">
+            document.localIdToElement.get('label').getUsedStyleDimensions().marginBottomPx</csvg:const>
+        <csvg:const csvg:name="labelWidthPx">document.localIdToElement.get('label').getBBox().width</csvg:const>
+    </csvg:consts>
     <g csvg:doc-local-id="content">
-        <!-- The octagon enclosing the label: -->
-        <path csvg:doc-local-id="border" class="border"
-            attr-expr:d="
-            {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
-            {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}h{{ document.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}v{{- document.getConst('octagonSideLength') }}
-            {{- ' ' }}l{{- 0 - document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
-            {{- ' ' }}h{{- 0 - document.getConst('octagonSideLength') }}
-            z"
-            stroke="#000" fill="none" />
-        <text csvg:doc-local-id="label" class="label"
-            attr-expr:x="{{ document.getConst('padding') }}"
-            attr-expr:y="{{ document.getConst('fontSize') / 2 }}"
-            text-anchor="start">
-            Start</text>
+        <path csvg:doc-local-id="underline-border" class="underline-border"
+            attr-expr:d="M0,{{ document.getConst('labelMarginBottomPx') }} h{{ document.getConst('labelWidthPx') }} M0,{{ document.getConst('labelMarginBottomPx') + document.getConst('labelFontSizePx') * 0.15 }} h{{ document.getConst('labelWidthPx') }}"
+            d="M0,7.2 h711.7402954101562 M0,14.399999999999999 h711.7402954101562" />
+        <path class="underline"
+            attr-expr:d="{{ document.localIdToElement.get('underline-border').getAttribute('d') }}"
+            d="M0,7.2 h711.7402954101562 M0,14.399999999999999 h711.7402954101562" />
+        <text csvg:doc-local-id="label" class="label">Important: Don't pay attention!</text>
     </g>
 </svg>
 ```
+
+![Example text with octagonal border rendered by CSVG evaluation](examples/underlined.svg)
 
 ## Alternative Solutions
 
@@ -234,7 +213,9 @@ To solve the above challenges we:
 
 ### Syntax, and Expressions
 
-See the [Expression API](src/lib/expression-api/index.ts).
+See the
+[Expression API](https://pavpen.github.io/npm-calculable-svg/dev/modules/xml_api.csvg_xml.html)
+in the documentation.
 
 ## To-Do
 

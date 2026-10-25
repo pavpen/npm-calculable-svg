@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attr-name:viewbox="viewBox"
+    attr-expr:viewbox="{{ document.getConst('contentBBox').x }} {{ document.getConst('contentBBox').y }} {{ document.getConst('contentBBox').width }} {{ document.getConst('contentHeight') }}"
+    viewBox="0 -42.82902526855469 596.5564575195312 64.4290267944336">
+    <title>The text "Important: Don't pay attention!", underlined</title>
+    <!-- Adding the following script renders calculables in this document: -->
+    <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&amp;display=swap');
+        .label {
+            font-family: "Noto Serif", serif;
+            font-size: 48px;
+            stroke-width: 0.5px;
+            fill: #000000;
+            stroke: #757575;
+            margin-bottom: 7.2px;
+        }
+        .underline-border {
+            stroke: #757575;
+            stroke-width: 4px;
+        }
+        .underline {
+            stroke: #fc0004;
+            stroke-width: 3px;
+        }
+    </style>
+    <csvg:consts>
+        <csvg:const csvg:name="contentBBox">document.localIdToElement.get('content').getBBox()</csvg:const>
+        <csvg:const csvg:name="labelFontSizePx">
+            document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx</csvg:const>
+        <csvg:const csvg:name="labelMarginBottomPx">
+            document.localIdToElement.get('label').getUsedStyleDimensions().marginBottomPx</csvg:const>
+        <csvg:const csvg:name="labelWidthPx">document.localIdToElement.get('label').getBBox().width</csvg:const>
+        <csvg:const csvg:name="underlineBorderWidthPx">
+            document.localIdToElement.get('underlineBorder').getUsedStyleDimensions().StrokeWidth</csvg:const>
+        <csvg:const csvg:name="contentHeight">
+            Math.max(
+                document.getConst('labelMarginBottomPx') + document.getConst('labelFontSizePx') * 0.15 + document.localIdToElement.get('underlineBorder').getUsedStyleDimensions().strokeWidthPx / 2,
+                document.getConst('contentBBox').height
+            ) + document.getConst('labelMarginBottomPx')</csvg:const>
+    </csvg:consts>
+    <g csvg:doc-local-id="content">
+        <path csvg:doc-local-id="underlineBorder" class="underline-border"
+            attr-expr:d="M0,{{ document.getConst('labelMarginBottomPx') }} H{{ document.getConst('labelWidthPx') }} M0,{{ document.getConst('labelMarginBottomPx') + document.getConst('labelFontSizePx') * 0.15 }} H{{ document.getConst('labelWidthPx') }}"
+            d="M0,7.2 H596.5564575195312 M0,14.399999999999999 H596.5564575195312" />
+        <path class="underline"
+            attr-expr:d="{{ document.localIdToElement.get('underlineBorder').getAttribute('d') }}"
+            d="M0,7.2 H596.5564575195312 M0,14.399999999999999 H596.5564575195312" />
+        <text csvg:doc-local-id="label" class="label">Important: Don't pay attention!</text>
+    </g>
+</svg>

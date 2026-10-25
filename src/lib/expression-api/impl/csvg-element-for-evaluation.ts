@@ -72,7 +72,7 @@ export class CsvgElementForEvaluation {
 
   toEvaluationObject(): CsvgElement {
     return {
-      getAttribute: this.getAttribute,
+      getAttribute: (qualifiedName: string) => this.getAttribute(qualifiedName),
       getBoundingClientRect: () =>
         this.getBoundingClientRect()?.toEvaluationObject(),
       getUsedStyleDimensions: (pseudoElementName: string | null = null) =>
