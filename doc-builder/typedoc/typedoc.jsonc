@@ -1,8 +1,9 @@
 {
-  "entryPoints": ["../../src/index.ts"],
-  "tsconfig": "../../tsconfig.json",
   "name": "🏗Calculable SVG SDK",
+  "entryPoints": ["../../src/index.ts"],
   "entryPointStrategy": "Expand",
+  "tsconfig": "../../tsconfig.json",
+  "readme": "../build/markdown/README.md",
   "out": "../../dist/doc/dev",
   "includeVersion": true,
   "jsDocCompatibility": {

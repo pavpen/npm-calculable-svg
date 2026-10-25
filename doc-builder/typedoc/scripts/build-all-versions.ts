@@ -1,16 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { ProjectDirs } from './lib/project-dirs.ts';
+import { ProjectPaths } from './lib/project-paths.ts';
 import { runCommand } from './lib/run-command.ts';
 
 class DocumentationBuilder {
-  private readonly projectDirs = new ProjectDirs();
+  private readonly projectPaths = new ProjectPaths();
   private readonly gitCommand = 'git';
   private readonly npmCommand = 'npm';
   private readonly skipTagNames = ['v0.0.0-alpha.0'];
 
   get docOutputRootDir(): string {
-    return this.projectDirs.docOutputRootDir;
+    return this.projectPaths.docOutputRootDir;
   }
 
   async fetchVersionTagNames(): Promise<string[]> {
@@ -24,7 +24,7 @@ class DocumentationBuilder {
   }
 
   async checkoutTag(tagName: string): Promise<{ outputDir: string }> {
-    const worktreesDir = this.projectDirs.docBuildSourceWorktreesDir;
+    const worktreesDir = this.projectPaths.docBuildSourceWorktreesDir;
     const outputDir = path.join(worktreesDir, tagName);
 
     await fs.mkdir(worktreesDir, { recursive: true });
@@ -41,7 +41,7 @@ class DocumentationBuilder {
 
   async cleanCheckoutTag(tagName: string): Promise<void> {
     const outputDir = path.join(
-      this.projectDirs.docBuildSourceWorktreesDir,
+      this.projectPaths.docBuildSourceWorktreesDir,
       tagName,
     );
 
@@ -77,7 +77,7 @@ class DocumentationBuilder {
       console.log(buildStdOut);
       console.log(buildStdErr);
 
-      const worktreeDocDir = new ProjectDirs(checkoutDir).typedocOutputDir;
+      const worktreeDocDir = new ProjectPaths(checkoutDir).typedocOutputDir;
       await fs.rename(
         worktreeDocDir,
         path.join(this.docOutputRootDir, tagName),
@@ -117,22 +117,26 @@ class DocumentationBuilder {
     tagNames: string[];
     includeDirtyWorkingTreeBuild: boolean;
   }): Promise<void> {
-    const stagingDir = this.projectDirs.docVersionSelectionPageStagingDir;
-    const outputDir = this.projectDirs.docVersionSelectionPageOutputDir;
+    const stagingDir = this.projectPaths.docVersionSelectionPageStagingDir;
+    const outputDir = this.projectPaths.docVersionSelectionPageOutputDir;
 
     console.log(`Deleting directory tree: ${JSON.stringify(stagingDir)}`);
     await fs.rm(stagingDir, { recursive: true, force: true });
 
-    await fs.cp(this.projectDirs.docVersionSelectionPageSourceDir, stagingDir, {
-      recursive: true,
-    });
+    await fs.cp(
+      this.projectPaths.docVersionSelectionPageSourceDir,
+      stagingDir,
+      {
+        recursive: true,
+      },
+    );
 
     const versions = [
       ...(includeDirtyWorkingTreeBuild ? ['dev'] : []),
       ...tagNames,
     ];
     await fs.writeFile(
-      this.projectDirs.docVersionSelectionPageStagingEntryPointFile,
+      this.projectPaths.docVersionSelectionPageStagingEntryPointFile,
       `\
 /**
  * # Calculable SVG SDK Versions
@@ -163,7 +167,7 @@ ${versions.map((v) => ` * * [${v}](${v}/index.html)\n`)}\
 
     console.log('Built version selection page.', { outputDir });
 
-    await fs.cp(outputDir, this.projectDirs.docOutputRootDir, {
+    await fs.cp(outputDir, this.projectPaths.docOutputRootDir, {
       recursive: true,
     });
   }

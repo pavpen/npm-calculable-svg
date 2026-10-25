@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export class ProjectDirs {
+export class ProjectPaths {
   readonly projectRootDir: string;
 
   constructor(projectRootDir?: string) {
@@ -37,12 +37,16 @@ export class ProjectDirs {
    * Where example SVGs for the XML API documentation, pre-processed for
    * TypeDoc are output
    */
-  get outputXmlApiExamplesDir(): string {
-    return path.join(this.docBuildTemporaryArtifactsDir, 'xml-api', 'examples');
+  get stagingExamplesDir(): string {
+    return path.join(this.docBuildTemporaryArtifactsDir, 'examples');
   }
 
   get examplesSourceDir(): string {
     return path.join(this.projectRootDir, 'examples');
+  }
+
+  get stagingMarkdownDir(): string {
+    return path.join(this.docBuildTemporaryArtifactsDir, 'markdown');
   }
 
   get distDir(): string {

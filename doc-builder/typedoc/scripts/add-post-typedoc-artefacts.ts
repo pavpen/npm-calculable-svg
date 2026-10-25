@@ -6,12 +6,13 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CsvgTransformer } from './lib/csvg-transformer.ts';
-import { IncludedArtefacts } from './lib/included-artefacts.ts';
-import { ProjectDirs } from './lib/project-dirs.ts';
+import { DocumentationCsvgArtefacts } from './lib/documentation-artefacts.ts';
+import { ProjectPaths } from './lib/project-paths.ts';
 
 class ArtefactsBuilder {
-  private readonly projectDirs = new ProjectDirs();
-  private readonly includedArtefacts = new IncludedArtefacts();
+  private readonly projectDirs = new ProjectPaths();
+  private readonly documentationCsvgArtefacts =
+    new DocumentationCsvgArtefacts();
   private csvgTransformer = new CsvgTransformer();
 
   async copyEvaluateForCurrentDocumentDebugScript(): Promise<void> {
@@ -29,16 +30,19 @@ class ArtefactsBuilder {
   }
 
   async copyIncludedExampleCsvgFiles(): Promise<void> {
-    for (const fileName of this.includedArtefacts.getIncludedCsvgExampleFileNames()) {
+    for (const csvgInfo of await this.documentationCsvgArtefacts.getCsvgExampleArtefactsInformation()) {
       const outputPath = path.join(
         this.projectDirs.typedocOutputMediaDir,
-        fileName,
+        csvgInfo.fileName,
       );
       if (fsSync.existsSync(outputPath)) {
         continue;
       }
 
-      const inputPath = path.join(this.projectDirs.examplesSourceDir, fileName);
+      const inputPath = path.join(
+        this.projectDirs.examplesSourceDir,
+        csvgInfo.fileName,
+      );
 
       console.log('Copying.', { inputPath, outputPath });
 

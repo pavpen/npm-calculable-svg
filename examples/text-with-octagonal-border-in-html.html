@@ -55,6 +55,7 @@ rest of the page.  This works fine.</p>
     xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
     xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    csvg:live-update="true"
     attr-expr:viewbox="
         {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
         {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}

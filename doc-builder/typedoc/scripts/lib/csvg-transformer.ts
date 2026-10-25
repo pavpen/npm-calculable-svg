@@ -7,7 +7,7 @@ export class CsvgTransformer {
    */
   transformString(csvgSource: string): string {
     return csvgSource.replace(
-      /(<script crossorigin="anonymous" href=")[.][.]\/(evaluate-for-current-document-debug[.]js"><\/script>)/,
+      /(<script crossorigin="anonymous" href=")[.][.]\/(evaluate-for-current-document-debug[.]js"\s*(>\s*<\/script>|\/>))/,
       '$1$2',
     );
   }
@@ -16,8 +16,8 @@ export class CsvgTransformer {
     const inputContent = (await fs.readFile(path)).toString();
     const outputContent = this.transformString(inputContent);
 
-    console.log('Transforming.', { path });
-
     await fs.writeFile(path, outputContent);
+
+    console.log('Transformed.', { path });
   }
 }

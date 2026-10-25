@@ -2,6 +2,7 @@
     xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:attr-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
     xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    csvg:live-update="true"
     attr-name:viewbox="viewBox"
     attr-expr:viewbox="{{ document.getConst('contentBBox').x }} {{ document.getConst('contentBBox').y }} {{ document.getConst('contentBBox').width }} {{ document.getConst('contentHeight') }}"
     viewBox="0 -42.82902526855469 596.5564575195312 64.4290267944336">

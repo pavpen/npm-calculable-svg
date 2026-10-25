@@ -78,7 +78,7 @@ example are calculated from the text bounding box.
 </svg>
 ```
 
-![Example text with octagonal border rendered by CSVG evaluation](examples/underlined.svg)
+![The text "Important: Don't pay attention!", underlined](examples/underlined.svg)
 
 ## Alternative Solutions
 

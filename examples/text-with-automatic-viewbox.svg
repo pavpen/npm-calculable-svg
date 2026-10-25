@@ -4,6 +4,7 @@
     xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
     xmlns:attr-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
     xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    csvg:live-update="true"
     attr-name:viewbox="viewBox"
     attr-expr:viewbox="
       {{- Math.round(document.getConst('labelBBox').x) }}{{ ' ' }}
