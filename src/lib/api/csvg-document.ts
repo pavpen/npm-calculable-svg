@@ -205,6 +205,7 @@ export class CsvgDocument {
     });
 
     try {
+      this.evaluationState.clearCalculationCache();
       this.evaluationInformation.calculateForSvgElement(this.svgElement);
 
       this.options.calculateFromRootNode(
@@ -290,6 +291,7 @@ export class CsvgDocument {
       attributes: true,
       childList: true,
       subtree: true,
+      characterData: true,
     });
   }
 
