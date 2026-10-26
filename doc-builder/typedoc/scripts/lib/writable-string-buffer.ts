@@ -1,8 +1,8 @@
 import { Writable } from 'node:stream';
 
 /**
- * A writable that accumlates octet chunks, which can be converted to a string
- * when closed
+ * A writable that accumulates octet chunks, which can be converted to a
+ * string when closed
  *
  * See <https://beta.docs.nodejs.org/stream/api-for-stream-implementers>.
  */

@@ -92,7 +92,7 @@ example are calculated from the text bounding box.
   [svgdx](https://crates.io/crates/svgdx), you can generate SVG output from
   React code, Rust, or another language and framework that can evaluate SVG
   text layout.  (Such solutions, although having some advantages in comparison
-  to Calculable SVG, may not be appropriate in enviornments, such as Markdown
+  to Calculable SVG, may not be appropriate in environments, such as Markdown
   on the Web, where you may not have a fully programmable Web page rendering
   framework.)
 
@@ -117,7 +117,7 @@ To solve the above challenges we:
   by an HTML, rather than by an XML parser.)
 * Minimize extra mark-up required for Calculable SVG.  (It's common to add
   extra attributes to elements on order to store data.  However, additional
-  changes, such as addring extra elements have the potential to interfere with
+  changes, such as adding extra elements have the potential to interfere with
   CSS selectors, and user code processing the DOM tree.)
 * Allow expression resolution statically for a single state (e.g., when fonts,
   and text sizes are fixed).  (This follows from the previous point, but we
@@ -130,7 +130,7 @@ To solve the above challenges we:
   the following consequences:
   * Browsers
     [disable JavaScript](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_as_an_image#restrictions)
-    (as well as external resources like fonts, and refrenced stylesheets) if
+    (as well as external resources like fonts, and referenced stylesheets) if
     an SVG is added to a Wab page in an `<img/>` element.  Therefore,
     Calculable SVGs can be rendered only when they're in-lined in HTML, or
     loaded by an `<object/>`, `<embed/>`, or `<iframe>` element.  (You can
@@ -229,8 +229,8 @@ in the documentation.
 ## To-Do
 
 * [ ] Clean up the CSVG expression API design.  (It currently works around
-      peculiarities of the Jinja rendering engine.  Nujucks may work betten.
-      EJS will probably be faster, but with the code execution challenges.)
+      peculiarities of the Jinja rendering engine.  Nujucks may work better.
+      EJS will probably be faster, but with the code sanitizing challenges.)
 * [x] Respond to document live updates. (Poll style and dimension changes,
   re-render on DOM mutation.)
 * Optimizations

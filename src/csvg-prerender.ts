@@ -9,6 +9,10 @@ import {
   firefox,
 } from 'playwright';
 
+const commandName = 'csvg-prerender';
+const helpDescription =
+  'Evaluates Calculable SVG expressions, and substitutes them in each input file';
+
 class CliArgs {
   static readonly cliOptions: ParseArgsOptionsConfig = {
     help: {
@@ -229,11 +233,9 @@ const main = async (): Promise<void> => {
 
   if (args.printHelp) {
     console.log({
-      commandName: 'csvg-prerender',
-      description:
-        'Evaluates Calculable SVG expressions, and substitutes them in each input file',
+      commandName,
+      description: helpDescription,
       options: CliArgs.cliOptions,
-      positionals: '[CSVG_PATH, ...]',
     });
     return;
   }
