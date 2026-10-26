@@ -128,6 +128,15 @@ To solve the above challenges we:
 * This implementation relies on JavaScript to calculate document expressions,
   and detect style, dimension, and DOM changes in a browser.  This includes
   the following consequences:
+  * Browsers
+    [disable JavaScript](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_as_an_image#restrictions)
+    (as well as external resources like fonts, and refrenced stylesheets) if
+    an SVG is added to a Wab page in an `<img/>` element.  Therefore,
+    Calculable SVGs can be rendered only when they're in-lined in HTML, or
+    loaded by an `<object/>`, `<embed/>`, or `<iframe>` element.  (You can
+    find a summary of some of the related SVG embedding limitations in
+    articles like
+    [Using Custom Fonts With SVG in an Image Tag](https://css-tricks.com/using-custom-fonts-with-svg-in-an-image-tag/).)
   * JavaScript currently doesn't seem to have a way to detect whether an
     element is in a CSS pseudo element state (such as hover), or at which
     point in an animation transition between two states an element currently
@@ -220,7 +229,8 @@ in the documentation.
 ## To-Do
 
 * [ ] Clean up the CSVG expression API design.  (It currently works around
-      peculiarities of the Jinja rendering engine.)
+      peculiarities of the Jinja rendering engine.  Nujucks may work betten.
+      EJS will probably be faster, but with the code execution challenges.)
 * [x] Respond to document live updates. (Poll style and dimension changes,
   re-render on DOM mutation.)
 * Optimizations
