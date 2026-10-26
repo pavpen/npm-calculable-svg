@@ -22,6 +22,10 @@ export class DocumentExpressionSet {
     return this.constantNames;
   }
 
+  get isEmpty(): boolean {
+    return this.expressionAttrs.size < 1 && this.constantNames.size < 1;
+  }
+
   clear(): void {
     this.expressionAttrs.clear();
     this.constantNames.clear();

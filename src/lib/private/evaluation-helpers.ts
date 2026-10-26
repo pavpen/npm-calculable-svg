@@ -209,22 +209,23 @@ evaluating an expression!`,
       this.reverseDependencies.elementToReverseDependencies.get(element);
     if (typeof slot === 'undefined') {
       slot = new ElementReverseDependencies();
-      slot.lastBBox = lastBBox;
       this.reverseDependencies.elementToReverseDependencies.set(element, slot);
     }
+    slot.lastBBox = lastBBox;
 
-    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+    const dependentExpression =
+      this.getCurrentExpressionUnderEvaluationOrThrow();
 
-    switch (typeof expression) {
+    switch (typeof dependentExpression) {
       case 'string':
-        slot.bboxReverseDependencies.addConstant(expression);
+        slot.bboxReverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.bboxReverseDependencies.addExpresionAttr(expression);
+        slot.bboxReverseDependencies.addExpresionAttr(dependentExpression);
         break;
       default:
         throw new InternalInterpreterError(
-          `Unrecognized expression: ${expression}`,
+          `Unrecognized expression: ${dependentExpression}`,
         );
     }
   }
@@ -237,22 +238,27 @@ evaluating an expression!`,
       this.reverseDependencies.elementToReverseDependencies.get(element);
     if (typeof slot === 'undefined') {
       slot = new ElementReverseDependencies();
-      slot.lastBoundingClientRect = lastBoundingClientRect;
       this.reverseDependencies.elementToReverseDependencies.set(element, slot);
     }
+    slot.lastBoundingClientRect = lastBoundingClientRect;
 
-    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+    const dependentExpression =
+      this.getCurrentExpressionUnderEvaluationOrThrow();
 
-    switch (typeof expression) {
+    switch (typeof dependentExpression) {
       case 'string':
-        slot.boundingClientRectReverseDependencies.addConstant(expression);
+        slot.boundingClientRectReverseDependencies.addConstant(
+          dependentExpression,
+        );
         break;
       case 'object':
-        slot.boundingClientRectReverseDependencies.addExpresionAttr(expression);
+        slot.boundingClientRectReverseDependencies.addExpresionAttr(
+          dependentExpression,
+        );
         break;
       default:
         throw new InternalInterpreterError(
-          `Unrecognized expression: ${expression}`,
+          `Unrecognized expression: ${dependentExpression}`,
         );
     }
   }
@@ -286,18 +292,21 @@ evaluating an expression!`,
       );
     }
 
-    const expression = this.getCurrentExpressionUnderEvaluationOrThrow();
+    const dependentExpression =
+      this.getCurrentExpressionUnderEvaluationOrThrow();
 
-    switch (typeof expression) {
+    switch (typeof dependentExpression) {
       case 'string':
-        pseudoElementSlot.reverseDependencies.addConstant(expression);
+        pseudoElementSlot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        pseudoElementSlot.reverseDependencies.addExpresionAttr(expression);
+        pseudoElementSlot.reverseDependencies.addExpresionAttr(
+          dependentExpression,
+        );
         break;
       default:
         throw new InternalInterpreterError(
-          `Unrecognized expression: ${expression}`,
+          `Unrecognized expression: ${dependentExpression}`,
         );
     }
   }
@@ -306,6 +315,13 @@ evaluating an expression!`,
     constName: string,
     expressionString: string,
   ): void {
+    const dependentExpression = this.expressionsUnderEvaluation.at(-1);
+
+    if (typeof dependentExpression === 'undefined') {
+      // A top-level expression call has no reverse dependencies.
+      return;
+    }
+
     let slot =
       this.reverseDependencies.constNameToReverseDependencies.get(constName);
 
@@ -326,21 +342,16 @@ current expression string: ${JSON.stringify(expressionString)}.`,
       }
     }
 
-    const expression = this.expressionsUnderEvaluation.at(-1);
-
-    switch (typeof expression) {
+    switch (typeof dependentExpression) {
       case 'string':
-        slot.reverseDependencies.addConstant(expression);
+        slot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.reverseDependencies.addExpresionAttr(expression);
-        break;
-      case 'undefined':
-        // A top-level expression call has no reverse dependencies.
+        slot.reverseDependencies.addExpresionAttr(dependentExpression);
         break;
       default:
         throw new InternalInterpreterError(
-          `Unrecognized expression: ${expression}`,
+          `Unrecognized expression: ${dependentExpression}`,
         );
     }
   }
@@ -349,6 +360,16 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     expressionAttribute: Attr,
     expressionString: string,
   ): void {
+    const dependentExpression =
+      this.expressionsUnderEvaluation[
+        this.expressionsUnderEvaluation.length - 1
+      ];
+
+    if (typeof dependentExpression === 'undefined') {
+      // A top-level expression call has no reverse dependencies.
+      return;
+    }
+
     let slot =
       this.reverseDependencies.attributeToReverseDependencies.get(
         expressionAttribute,
@@ -371,21 +392,16 @@ current expression string: ${JSON.stringify(expressionString)}.`,
       }
     }
 
-    const expression = this.expressionsUnderEvaluation.at(-1);
-
-    switch (typeof expression) {
+    switch (typeof dependentExpression) {
       case 'string':
-        slot.reverseDependencies.addConstant(expression);
+        slot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.reverseDependencies.addExpresionAttr(expression);
-        break;
-      case 'undefined':
-        // A top-level expression call has no reverse dependencies.
+        slot.reverseDependencies.addExpresionAttr(dependentExpression);
         break;
       default:
         throw new InternalInterpreterError(
-          `Unrecognized expression: ${expression}`,
+          `Unrecognized expression: ${dependentExpression}`,
         );
     }
   }
@@ -411,6 +427,20 @@ current expression string: ${JSON.stringify(expressionString)}.`,
       jinjaEvaluator,
     } = this;
     const statementString = expressionSource.value;
+
+    if (disallowedExpressionAttributes.has(expressionSource)) {
+      throw new CircularAttributeSettingExpressionError({
+        expressionString: statementString,
+        expressionDefinitionAttribute: expressionSource,
+        dependencyChain: Array.from(disallowedExpressionAttributes.values()),
+      });
+    }
+
+    this.addLastExpressionDependencyOnExpressionAttribute(
+      expressionSource,
+      statementString,
+    );
+
     if (statementString === null) {
       console.debug(
         `Skipping null expression attribute: ${calculateAttrXPath(expressionSource)}`,
@@ -427,14 +457,6 @@ current expression string: ${JSON.stringify(expressionString)}.`,
       return;
     }
 
-    if (disallowedExpressionAttributes.has(expressionSource)) {
-      throw new CircularAttributeSettingExpressionError({
-        expressionString: statementString,
-        expressionDefinitionAttribute: expressionSource,
-        dependencyChain: Array.from(disallowedExpressionAttributes.values()),
-      });
-    }
-
     const ownerElement = expressionSource.ownerElement;
     if (ownerElement === null) {
       throw new InternalInterpreterError(
@@ -446,20 +468,17 @@ expression: ${JSON.stringify(statementString)}`,
 
     const expressionAttributeLocalName =
       this.documentEvaluationInformation.getAttrLocalName(expressionSource);
-    let outputAttributeQualifiedName =
-      this.documentEvaluationInformation.getAttrLocalName(expressionSource);
-    for (const attribute of ownerElement.attributes) {
-      if (
-        this.documentEvaluationInformation.getAttrNamespaceUri(attribute) ===
-          csvg_xml.attributes.attribute_expression.output_attribute_name
-            .namespaceUri &&
-        this.documentEvaluationInformation.getAttrLocalName(attribute) ===
-          expressionAttributeLocalName
-      ) {
-        outputAttributeQualifiedName = attribute.value;
-        break;
-      }
-    }
+    const outputNameAttribute =
+      this.documentEvaluationInformation.elementGetAttributeNodeNS(
+        ownerElement,
+        csvg_xml.attributes.attribute_expression.output_attribute_name
+          .namespaceUri,
+        expressionAttributeLocalName,
+      );
+    const outputAttributeQualifiedName =
+      outputNameAttribute === null
+        ? this.documentEvaluationInformation.getAttrLocalName(expressionSource)
+        : outputNameAttribute.value;
     if (
       !this.documentEvaluationInformation.isValidOutputAttributeQualifiedName(
         outputAttributeQualifiedName,
@@ -480,11 +499,6 @@ expression: ${JSON.stringify(statementString)}`,
       });
     }
     const valueExpressionString = expressionSource.value;
-
-    this.addLastExpressionDependencyOnExpressionAttribute(
-      expressionSource,
-      statementString,
-    );
 
     disallowedExpressionAttributes.add(expressionSource);
     this.expressionsUnderEvaluation.push(expressionSource);
@@ -583,15 +597,6 @@ expression: ${JSON.stringify(statementString)}`,
   }
 
   renderConst(constName: string): unknown {
-    if (this.constNameToValue.has(constName)) {
-      const result = this.constNameToValue.get(constName);
-      console.debug(
-        `Returning already-calculated constant ${JSON.stringify(constName)}=${JSON.stringify(result)}.`,
-      );
-
-      return result;
-    }
-
     const definition =
       this.documentEvaluationInformation.getConstDefinition(constName);
 
@@ -609,6 +614,15 @@ expression: ${JSON.stringify(statementString)}`,
     const expressionString = definition.expressionString;
 
     this.addLastExpressionDependencyOnConst(constName, expressionString);
+
+    if (this.constNameToValue.has(constName)) {
+      const result = this.constNameToValue.get(constName);
+      console.debug(
+        `Returning already-calculated constant ${JSON.stringify(constName)}=${JSON.stringify(result)}.`,
+      );
+
+      return result;
+    }
 
     this.disallowedConstNames.add(constName);
     this.expressionsUnderEvaluation.push(constName);

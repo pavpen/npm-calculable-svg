@@ -77,66 +77,27 @@ export class DocumentReverseDependencies {
       element,
       reverseDependencies,
     ] of this.elementToReverseDependencies.entries()) {
-      const lastBBox = reverseDependencies.lastBBox;
-      if (lastBBox != null) {
-        if (!(element instanceof SVGGraphicsElement)) {
-          throw new InternalInterpreterError(
-            `Element has a recorded lastBBox used by CSVG expressions, but \
-it's not instanceof SVGGraphicsElement (which defines the \`getBBox\` method)!  \
-Element path: ${JSON.stringify(calculateElementXPath(element))}.`,
-          );
+      if (reverseDependencies.calculateIsBBoxInvalidated(element)) {
+        outputInvalidatedElements.add(element);
+
+        for (const constName of reverseDependencies.bboxReverseDependencies.getConstantNames()) {
+          outputInvalidatedConstantNames.add(constName);
         }
-
-        const currentBBox = new CsvgDomRect(element.getBBox());
-        if (!currentBBox.equals(lastBBox)) {
-          console.debug('Element BBox has changed since last calculation.', {
-            element,
-            lastBBox,
-            currentBBox,
-          });
-
-          outputInvalidatedElements.add(element);
-
-          for (const constName of reverseDependencies.bboxReverseDependencies.getConstantNames()) {
-            outputInvalidatedConstantNames.add(constName);
-          }
-          for (const attr of reverseDependencies.bboxReverseDependencies.getExpressionAttrs()) {
-            outputInvalidatedExpressionAttrs.add(attr);
-          }
+        for (const attr of reverseDependencies.bboxReverseDependencies.getExpressionAttrs()) {
+          outputInvalidatedExpressionAttrs.add(attr);
         }
       }
 
-      const lastBoundingClientRect = reverseDependencies.lastBoundingClientRect;
-      if (lastBoundingClientRect !== null) {
-        if (!(element instanceof Element)) {
-          throw new InternalInterpreterError(
-            `Element has a recorded lastBoundingClientRect used by CSVG \
-expressions, but it's not instanceof SVGGraphicsElement (which defines the \
-\`getBoundingClientRect\` method)!`,
-          );
+      if (
+        reverseDependencies.calculateIsBoundingClientRectInvalidated(element)
+      ) {
+        outputInvalidatedElements.add(element);
+
+        for (const constName of reverseDependencies.boundingClientRectReverseDependencies.getConstantNames()) {
+          outputInvalidatedConstantNames.add(constName);
         }
-
-        const currentBoundingClientRect = new CsvgDomRect(
-          element.getBoundingClientRect(),
-        );
-        if (!currentBoundingClientRect.equals(lastBoundingClientRect)) {
-          console.debug(
-            'Element BoundingClientRect has changed since last calculation.',
-            {
-              element,
-              lastBoundingClientRect,
-              currentBoundingClientRect,
-            },
-          );
-
-          outputInvalidatedElements.add(element);
-
-          for (const constName of reverseDependencies.boundingClientRectReverseDependencies.getConstantNames()) {
-            outputInvalidatedConstantNames.add(constName);
-          }
-          for (const attr of reverseDependencies.boundingClientRectReverseDependencies.getExpressionAttrs()) {
-            outputInvalidatedExpressionAttrs.add(attr);
-          }
+        for (const attr of reverseDependencies.boundingClientRectReverseDependencies.getExpressionAttrs()) {
+          outputInvalidatedExpressionAttrs.add(attr);
         }
       }
 

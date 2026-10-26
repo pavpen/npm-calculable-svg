@@ -28,9 +28,17 @@
             stroke: #757575;
             padding-bottom: 48px;
         }
+        .label:hover {
+            font-size: 42px;
+        }
         .border {
             stroke: #0400ac;
             stroke-width: 18px;
+            fill: none;
+        }
+        .border-outline {
+            stroke: #757575;
+            stroke-width: 19px;
             fill: none;
         }
     </style>
@@ -74,11 +82,16 @@
         const-expr:border-stroke-width-px="document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx"
     />
     <g csvg:doc-local-id="content">
-        <ellipse csvg:doc-local-id="border" class="border"
+        <ellipse csvg:doc-local-id="borderOutline" class="border-outline"
             cx="0"
             attr-expr:cy="{{ document.getConst('labelMiddleY') }}"
             attr-expr:rx="{{ document.getConst('semiHorizontalAxis') }}"
             attr-expr:ry="{{ document.getConst('semiVerticalAxis') }}" />
+        <ellipse csvg:doc-local-id="border" class="border"
+            cx="0"
+            attr-expr:cy="{{ document.localIdToElement.get('borderOutline').getAttribute('cy') }}"
+            attr-expr:rx="{{ document.localIdToElement.get('borderOutline').getAttribute('rx') }}"
+            attr-expr:ry="{{ document.localIdToElement.get('borderOutline').getAttribute('ry') }}" />
         <text csvg:doc-local-id="label" class="label" text-anchor="middle">
             The unfortunate label</text>
     </g>

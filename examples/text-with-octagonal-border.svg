@@ -5,10 +5,10 @@
     xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
     csvg:live-update="true"
     attr-expr:viewbox="
-        {{- document.getConst('contentBBox').x - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- document.getConst('contentBBox').y - document.getConst('borderStrokeWidthPx') / 2 }}{{ ' ' }}
-        {{- document.getConst('contentBBox').width + document.getConst('borderStrokeWidthPx') }}{{ ' ' }}
-        {{- document.getConst('contentBBox').height + document.getConst('borderStrokeWidthPx') }}"
+        {{- document.getConst('contentBBox').x - document.getConst('borderOutlineStrokeWidth') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').y - document.getConst('borderOutlineStrokeWidth') / 2 }}{{ ' ' }}
+        {{- document.getConst('contentBBox').width + document.getConst('borderOutlineStrokeWidth') }}{{ ' ' }}
+        {{- document.getConst('contentBBox').height + document.getConst('borderOutlineStrokeWidth') }}"
     attr-output-name:viewbox="viewBox"
 >
     <title>The text 'Start' inside an octagonal border</title>
@@ -18,8 +18,18 @@
         .label {
             font-size: 48px;
             stroke-width: 0.5px;
+            stroke: #757575;
             fill: #000;
-            stroke: #757575; 
+        }
+        .border {
+            stroke-width: 4px;
+            stroke: #000;
+            fill: none;
+        }
+        .border-outline {
+            stroke-width: 5px;
+            stroke: #757575;
+            fill: none;
         }
     </style>
     <csvg:consts>
@@ -27,19 +37,28 @@
         <csvg:const csvg:name="fontSize">
             document.localIdToElement.get('label').getUsedStyleDimensions().fontSizePx
         </csvg:const>
-        <csvg:const csvg:name="borderStrokeWidthPx">
-            document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx
+        <csvg:const csvg:name="borderOutlineStrokeWidth">
+            document.localIdToElement.get('borderOutline').getUsedStyleDimensions().strokeWidthPx
         </csvg:const>
         <csvg:const csvg:name="octagonSideLength">
             Math.max(
                 (document.localIdToElement.get('label').getBBox().width
-                    - 2 * document.getConst('padding')
-                ) / (1 + 2 / Math.sqrt(2)),
+                    + 2 * document.getConst('padding')
+                ) / (1 + Math.sqrt(2)),
                 document.getConst('fontSize')
             )
         </csvg:const>
         <csvg:const csvg:name="octagonSlantedSideProjection">
             document.getConst('octagonSideLength') / Math.sqrt(2)
+        </csvg:const>
+        <csvg:const csvg:name="horizontalBorderToLabel">
+            Math.max(
+                document.getConst('padding'),
+                (
+                    (1 + Math.sqrt(2)) * document.getConst('octagonSideLength')
+                    - document.localIdToElement.get('label').getBBox().width
+                ) / 2
+            )
         </csvg:const>
         <csvg:const csvg:name="contentBBox">
             document.localIdToElement.get('content').getBBox()
@@ -47,9 +66,9 @@
     </csvg:consts>
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
-        <path csvg:doc-local-id="border" class="border"
+        <path csvg:doc-local-id="borderOutline" class="border-outline"
             attr-expr:d="
-            {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
+            {{- '' }}M{{ 0 - document.getConst('horizontalBorderToLabel') - document.localIdToElement.get('label').getBBox().width / 2 }},{{ document.getConst('octagonSideLength') / 2 }}
             {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
             {{- ' ' }}l{{ document.getConst('octagonSlantedSideProjection') }},{{ 0 - document.getConst('octagonSlantedSideProjection') }}
             {{- ' ' }}h{{ document.getConst('octagonSideLength') }}
@@ -58,11 +77,13 @@
             {{- ' ' }}l{{- 0 - document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
             {{- ' ' }}h{{- 0 - document.getConst('octagonSideLength') }}
             z"
-            stroke="#000" fill="none" />
+        />
+        <path csvg:doc-local-id="border" class="border"
+            attr-expr:d="{{ document.localIdToElement.get('borderOutline').getAttribute('d') }}"
+        />
         <text csvg:doc-local-id="label" class="label"
-            attr-expr:x="{{ document.getConst('padding') }}"
-            attr-expr:y="{{ document.getConst('fontSize') / 2 }}"
-            text-anchor="start">
+            attr-expr:x="0" attr-expr:y="0"
+            text-anchor="middle" dominant-baseline="central">
             Start</text>
     </g>
 </svg>

@@ -1,6 +1,8 @@
-import type { CsvgDomRect } from '../../api/csvg-dom-rect';
+import { CsvgDomRect } from '../../api/csvg-dom-rect';
 import type { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
+import { InternalInterpreterError } from '../../api/faults';
 import { DocumentExpressionSet } from '../document-expression-set';
+import { calculateElementXPath } from '../xpath-helpers';
 
 export class UsedStyleDimensionsReverseDependencies {
   lastUsedStyleDimensions: CsvgUsedStyleDimensions;
@@ -38,6 +40,81 @@ export class ElementReverseDependencies {
     string,
     UsedStyleDimensionsReverseDependencies
   > = new Map();
+
+  calculateIsBBoxInvalidated(element: Element): boolean {
+    if (!(element instanceof SVGGraphicsElement)) {
+      throw new InternalInterpreterError(
+        `Element has a recorded lastBBox used by CSVG expressions, but \
+it's not instanceof SVGGraphicsElement (which defines the \`getBBox\` method)!  \
+Element path: ${JSON.stringify(calculateElementXPath(element))}.`,
+      );
+    }
+
+    const lastBBox = this.lastBBox;
+    if (lastBBox === null) {
+      console.assert(
+        this.bboxReverseDependencies.isEmpty,
+        `Element has no last calculated BBox value, but it has BBox reverse dependencies!  \
+Element path: ${calculateElementXPath(element)}, \
+reverse dependencies: ${JSON.stringify(this.toJsValue())}`,
+      );
+
+      return false;
+    }
+
+    const currentBBox = new CsvgDomRect(element.getBBox());
+
+    const result = !currentBBox.equals(lastBBox);
+    if (result) {
+      console.debug('Element BBox has changed since last calculation.', {
+        element,
+        lastBBox,
+        currentBBox,
+      });
+    }
+
+    return result;
+  }
+
+  calculateIsBoundingClientRectInvalidated(element: Element): boolean {
+    if (!(element instanceof Element)) {
+      throw new InternalInterpreterError(
+        `Element has a recorded lastBoundingClientRect used by CSVG \
+expressions, but it's not instanceof SVGGraphicsElement (which defines the \
+\`getBoundingClientRect\` method)!`,
+      );
+    }
+
+    const lastBoundingClientRect = this.lastBoundingClientRect;
+
+    if (lastBoundingClientRect === null) {
+      console.assert(
+        this.boundingClientRectReverseDependencies.isEmpty,
+        `Element has no last calculated BoundingClientRect, but it has reverse dependencies!\
+Element path: ${calculateElementXPath(element)}, \
+reverse dependencies: ${JSON.stringify(this.boundingClientRectReverseDependencies.toJsValue())}`,
+      );
+
+      return false;
+    }
+
+    const currentBoundingClientRect = new CsvgDomRect(
+      element.getBoundingClientRect(),
+    );
+    const result = !currentBoundingClientRect.equals(lastBoundingClientRect);
+    if (result) {
+      console.debug(
+        'Element BoundingClientRect has changed since last calculation.',
+        {
+          element,
+          lastBoundingClientRect,
+          currentBoundingClientRect,
+        },
+      );
+    }
+
+    return result;
+  }
 
   clear() {
     this.bboxReverseDependencies.clear();
