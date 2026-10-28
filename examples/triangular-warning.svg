@@ -8,13 +8,13 @@
     attr-name:viewbox="viewBox"
     attr-expr:viewbox="
         {{ document.localIdToElement.get('content').getBBox().x -
-            document.getConst('outlineStrokeWidthPx') * Math.sqrt(3) }}
+            document.getConst('borderStrokeWidthPx') * Math.sqrt(3) }}
         {{ document.localIdToElement.get('content').getBBox().y -
-            document.getConst('outlineStrokeWidthPx') * 2 / Math.sqrt(3) }}
+            document.getConst('borderStrokeWidthPx') * 2 / Math.sqrt(3) }}
         {{ document.localIdToElement.get('content').getBBox().width +
-            document.getConst('outlineStrokeWidthPx') * 2 * Math.sqrt(3) }}
+            document.getConst('borderStrokeWidthPx') * 2 * Math.sqrt(3) }}
         {{ document.localIdToElement.get('content').getBBox().height +
-            document.getConst('outlineStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
+            document.getConst('borderStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
 >
     <title>The title text 'Title', followed by subtitle text
         'Beware of titles' inside an triangular warning-sign border</title>
@@ -23,25 +23,27 @@
     <style>
         .title {
             font-size: 48px;
-            stroke-width: 0.5px;
             fill: #000000;
-            stroke: #757575;
             margin-bottom: 2px;
         }
         .subtitle {
             font-size: 30px;
-            stroke-width: 0.5px;
             fill: #000000;
-            stroke: #757575;
             padding-left: 15px;
             padding-right: 15px;
             padding-bottom: 15px;
         }
-        .outline {
+        .border {
             stroke: #fc0004;
             stroke-width: 30px;
             stroke-linejoin: round;
-            fill: #ffffff;
+            /* Make some allowance for vampires using dark mode: */
+            fill: rgba(255, 255, 255, 0.85);
+        }
+        .border-outline {
+            stroke: #ffffff;
+            stroke-width: 32px;
+            fill: none;
         }
     </style>
     <csvg:consts>
@@ -58,23 +60,25 @@
             document.localIdToElement.get('label').getBBox().height +
             document.localIdToElement.get('subtitle').getUsedStyleDimensions().paddingBottomPx
         </csvg:const>
-        <csvg:const csvg:name="outlineSideLength">
+        <csvg:const csvg:name="borderSideLength">
             document.getConst('labelWidth') / (1 - document.getConst('elevationCoefficient') / 2) +
             document.getConst('labelHeight') * 2 / Math.sqrt(3)
         </csvg:const>
-        <csvg:const csvg:name="outlineHeight">document.getConst('outlineSideLength') * Math.sqrt(3) / 2</csvg:const>
-        <csvg:const csvg:name="outlineStartY">document.getConst('subtitleFontSizePx')</csvg:const>
-        <csvg:const csvg:name="outlineStrokeWidthPx">document.localIdToElement.get('outline').getUsedStyleDimensions().strokeWidthPx</csvg:const>
+        <csvg:const csvg:name="borderHeight">document.getConst('borderSideLength') * Math.sqrt(3) / 2</csvg:const>
+        <csvg:const csvg:name="borderStartY">document.getConst('subtitleFontSizePx')</csvg:const>
+        <csvg:const csvg:name="borderStrokeWidthPx">document.localIdToElement.get('border').getUsedStyleDimensions().strokeWidthPx</csvg:const>
     </csvg:consts>
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
-        <path csvg:doc-local-id="outline"
-            class="outline"
+        <path csvg:doc-local-id="borderOutline"
+            class="border-outline"
             attr-expr:d="
-            M{{ 0 - document.getConst('outlineSideLength') / 2 }},{{ document.getConst('outlineStartY') }}
-            L0,{{ document.getConst('outlineStartY') - document.getConst('outlineHeight') }}
-            L{{ document.getConst('outlineSideLength') / 2 }},{{ document.getConst('outlineStartY') }}
+            M{{ 0 - document.getConst('borderSideLength') / 2 }},{{ document.getConst('borderStartY') }}
+            L0,{{ document.getConst('borderStartY') - document.getConst('borderHeight') }}
+            L{{ document.getConst('borderSideLength') / 2 }},{{ document.getConst('borderStartY') }}
             z"/>
+        <path csvg:doc-local-id="border" class="border"
+            attr-expr:d="{{ document.localIdToElement.get('borderOutline').getAttribute('d') }}"/>
         <g csvg:doc-local-id="label">
             <text csvg:doc-local-id="title" class="title"
                 attr-expr:y="{{

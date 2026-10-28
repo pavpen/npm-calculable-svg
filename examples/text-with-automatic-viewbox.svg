@@ -15,7 +15,7 @@
     <!--
         When SVG is embedded in an HTML document, the browser may parse it
         using HTML, rather than XML parsing rules.  In this case attribute
-        names are lowecased, and namespace definition attributes are ignored.
+        names are lowercased, and namespace definition attributes are ignored.
         In the above 'attr-expr:viewbox' expression, we use
         `attr-name:viewbox` to capitalize the name of the output attribute.
     -->

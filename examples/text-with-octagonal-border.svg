@@ -15,9 +15,12 @@
     <!-- Adding the following script renders calculables in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
     <style>
+        g {
+            --outline-width: 1px;
+        }
         .label {
             font-size: 48px;
-            stroke-width: 0.5px;
+            stroke-width: var(--outline-width);
             stroke: #757575;
             fill: #000;
         }
@@ -27,7 +30,7 @@
             fill: none;
         }
         .border-outline {
-            stroke-width: 5px;
+            stroke-width: calc(4px + var(--outline-width));
             stroke: #757575;
             fill: none;
         }

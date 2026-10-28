@@ -15,6 +15,7 @@
             font-family: "VT323", serif;
             font-weight: 400;
             font-style: normal;
+            font-size: 42px;
         }
     }
     img {
@@ -67,11 +68,24 @@ rest of the page.  This works fine.</p>
     <!-- Adding the following script renders calculables in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
     <style>
+        g {
+            --outline-width: 1px;
+        }
         .label {
             font-size: 48px;
-            stroke-width: 0.5px;
+            stroke-width: var(--outline-width);
             fill: #000;
             stroke: #757575; 
+        }
+        .border {
+            stroke-width: 4px;
+            stroke: #000;
+            fill: none;
+        }
+        .border-outline {
+            stroke-width: calc(4px + var(--outline-width));
+            stroke: #757575;
+            fill: none;
         }
     </style>
     <csvg:consts>
@@ -98,7 +112,7 @@ rest of the page.  This works fine.</p>
     </csvg:consts>
     <g csvg:doc-local-id="content">
         <!-- The octagon enclosing the label: -->
-        <path csvg:doc-local-id="border" class="border"
+        <path csvg:doc-local-id="borderOutline" class="border-outline"
             attr-expr:d="
             {{- '' }}M1,{{ document.getConst('octagonSideLength') / 2 + document.getConst('padding') }}
             {{- ' ' }}v{{ 0 - document.getConst('octagonSideLength') }}
@@ -109,7 +123,10 @@ rest of the page.  This works fine.</p>
             {{- ' ' }}l{{- 0 - document.getConst('octagonSlantedSideProjection') }},{{ document.getConst('octagonSlantedSideProjection') }}
             {{- ' ' }}h{{- 0 - document.getConst('octagonSideLength') }}
             z"
-            stroke="#000" fill="none" />
+            />
+        <path csvg:doc-local-id="border" class="border"
+            attr-expr:d="{{ document.localIdToElement.get('borderOutline').getAttribute('d') }}"
+        />
         <text csvg:doc-local-id="label" class="label"
             attr-expr:x="{{ document.getConst('padding') }}"
             attr-expr:y="{{ document.getConst('fontSize') / 2 }}"

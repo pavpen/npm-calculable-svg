@@ -23,9 +23,11 @@
     <style>
         .label {
             font-size: 48px;
-            stroke-width: 0.5px;
             fill: #000000;
-            stroke: #757575;
+            stroke: #d3d3d3;
+            stroke-width: 0.25px;
+            text-shadow: 1px 2px 1px #fff;
+            filter: drop-shadow(1px 1px 3px #fff);
             padding-bottom: 48px;
         }
         .label:hover {
@@ -33,12 +35,12 @@
         }
         .border {
             stroke: #0400ac;
-            stroke-width: 18px;
+            stroke-width: 14px;
             fill: none;
         }
         .border-outline {
             stroke: #757575;
-            stroke-width: 19px;
+            stroke-width: 16px;
             fill: none;
         }
     </style>

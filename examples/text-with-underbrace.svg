@@ -28,26 +28,32 @@
     <style>
         .static-label {
             font-size: 56px;
-            stroke-width: 0.5px;
             fill: #00f;
-            stroke: #757575;
+            text-shadow: 1px 2px 1px #d3d3d3;
+            filter: drop-shadow(1px 1px 3px #fff);
         }
         .responsive-label {
             font-size: 48px;
-            stroke-width: 0.5px;
             fill: #00f;
-            stroke: #757575;
+            text-shadow: 1px 2px 1px #d3d3d3;
+            filter: drop-shadow(1px 1px 3px #fff);
             /* An transition animation for showing CSVG live update on hover: */
-            transition: font-size 0.5s ease, fill 1s ease, stroke 0.5s ease;
+            transition: font-size 0.5s ease, fill 1s ease, text-shadow 0.5s ease, filter 0.5s ease;
         }
         .responsive-label:hover {
             font-size: 56px;
-            fill: #757575;
-            stroke: #00f;
+            fill: #4060a0;
+            text-shadow: 1px 2px 1px #fff;
+            filter: drop-shadow(1px 1px 3px #00f);
         }
         .brace {
             stroke: #000;
             stroke-width: 4.8px;
+            fill: none;
+        }
+        .brace-outline {
+            stroke: #757575;
+            stroke-width: 6.8px;
             fill: none;
         }
     </style>
@@ -78,7 +84,7 @@
         <csvg:const csvg:name="braceMouthStraightLengthVerticalComponentPx">document.getConst('braceMouthDepthPx') - document.getConst('braceMouthCornerVerticalSizePx')</csvg:const>
     </csvg:consts>
     <g csvg:doc-local-id="content">
-        <path csvg:doc-local-id="brace" class="brace"
+        <path csvg:doc-local-id="braceOutline" class="brace-outline"
             attr-expr:d="
             {{- '' }}M1,{{ document.getConst('braceToBaseLineDistancePx') }}
             {{- ' ' }}v{{ document.getConst('braceHandStraightLengthPx') }}
@@ -92,6 +98,8 @@
             {{- ' ' }}a{{ document.getConst('braceHandCornerRadiusPx') }},{{ document.getConst('braceHandCornerRadiusPx') }},0,0,0,{{ document.getConst('braceHandCornerRadiusPx') }},{{ 0 - document.getConst('braceHandCornerRadiusPx') }}
             {{- ' ' }}v{{ 0 - document.getConst('braceHandStraightLengthPx') }}{{ '' -}}
             " />
+        <path csvg:doc-local-id="brace" class="brace"
+            attr-expr:d="{{ document.localIdToElement.get('braceOutline').getAttribute('d') }}"/>
         <text class="static-label"
             x="0"
             attr-expr:y="{{ 0 - document.localIdToElement.get('responsive-label-container').getBBox().height - document.getConst('fontSizePx') * 0.2 }}">
