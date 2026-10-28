@@ -82,12 +82,22 @@ example are calculated from the text bounding box.
 
 ## Alternative Solutions
 
-* In simpler cases you may be able to achive SVG responding to text layout
+* In simpler cases you may be able to achieve SVG responding to text layout
   using an SVG
   [`<foreignObject/>`](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/foreignObject)
   that embeds HTML in the SVG, and styling SVG, and HTML elements with CSS.
   This would, generally, be supported in a browser environment better than the
   Calculable SVG solution.
+* The CSS
+  [Houdini APIs](https://developer.mozilla.org/en-US/docs/Web/API/Houdini_APIs)
+  will provide better separation of concerns, and likely quite a bit higher
+  performance.  They're a better choice than CSVG.  Unfortunately, the
+  [Painting API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Painting_API#browser_compatibility)
+  is still (as of Oct., 2026) experimental, and some widely-used browser (like
+  Firefox, and Safari) still don't list it as supported.  The
+  [CSS Layout API](https://www.w3.org/TR/css-layout-api-1/) is still listed as
+  'First Public Working Draft', and seems to run mainly in Chrome behind a
+  feature flag.
 * With tools like [SVGR](https://react-svgr.com/), and
   [svgdx](https://crates.io/crates/svgdx), you can generate SVG output from
   React code, Rust, or another language and framework that can evaluate SVG
