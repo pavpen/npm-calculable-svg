@@ -5,14 +5,29 @@
     csvg:live-update="true"
     attr-name:viewbox="viewBox"
     attr-expr:viewbox="{{ document.getConst('contentBBox').x }} {{ document.getConst('contentBBox').y }} {{ document.getConst('contentBBox').width }} {{ document.getConst('contentHeight') }}"
-    viewBox="0 -42.82902526855469 596.5564575195312 64.4290267944336">
+    viewBox="0 -46.26173400878906 659.0194091796875 68.09554595947266">
     <title>The text "Important: Don't pay attention!", underlined</title>
     <!-- Adding the following script renders calculables in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&amp;display=swap');
+    <![CDATA[
+        @import url('https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap');
+        /**
+         * Embed font for loading this SVG in `<img/>`
+         * https://fonts.googleapis.com/css2?family=Noto+Serif&amp;display=swap&amp;text=Important%3A%20Don%27t%20pay%20attention!.
+         *
+         * License: https://fonts.google.com/specimen/Radley/license?categoryFilters=Serif:%2FSerif%2FOld+Style+Garalde&preview.script=Latn
+         */
+        @font-face {
+            font-family: 'Radley Embedded';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url(data:font/woff2;base64,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) format('woff2');
+            unicode-range: U+20-21, U+27, U+3a, U+44, U+49, U+61, U+65, U+69, U+6d-70, U+72, U+74, U+79;
+        }
         .label {
-            font-family: "Noto Serif", serif;
+            font-family: "Radley Embedded", "Radley", serif;
             font-size: 48px;
             stroke-width: 0.5px;
             fill: #000000;
@@ -27,6 +42,7 @@
             stroke: #fc0004;
             stroke-width: 3px;
         }
+    ]]>
     </style>
     <csvg:consts>
         <csvg:const csvg:name="contentBBox">document.localIdToElement.get('content').getBBox()</csvg:const>
@@ -46,10 +62,10 @@
     <g csvg:doc-local-id="content">
         <path csvg:doc-local-id="underlineBorder" class="underline-border"
             attr-expr:d="M0,{{ document.getConst('labelMarginBottomPx') }} H{{ document.getConst('labelWidthPx') }} M0,{{ document.getConst('labelMarginBottomPx') + document.getConst('labelFontSizePx') * 0.15 }} H{{ document.getConst('labelWidthPx') }}"
-            d="M0,7.2 H596.5564575195312 M0,14.399999999999999 H596.5564575195312" />
+            d="M0,7.2 H659.0194091796875 M0,14.399999999999999 H659.0194091796875" />
         <path class="underline"
             attr-expr:d="{{ document.localIdToElement.get('underlineBorder').getAttribute('d') }}"
-            d="M0,7.2 H596.5564575195312 M0,14.399999999999999 H596.5564575195312" />
+            d="M0,7.2 H659.0194091796875 M0,14.399999999999999 H659.0194091796875" />
         <text csvg:doc-local-id="label" class="label">Important: Don't pay attention!</text>
     </g>
 </svg>

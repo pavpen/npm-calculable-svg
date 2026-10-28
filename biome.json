@@ -30,5 +30,8 @@
     "rules": {
       "preset": "recommended"
     }
+  },
+  "files": {
+    "includes": ["**", "!examples/underlined.svg"]
   }
 }
