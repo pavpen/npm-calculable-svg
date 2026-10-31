@@ -148,24 +148,41 @@ To solve the above challenges we:
     articles like
     [Using Custom Fonts With SVG in an Image Tag](https://css-tricks.com/using-custom-fonts-with-svg-in-an-image-tag/).)
   * JavaScript currently doesn't seem to have a way to detect whether an
-    element is in a CSS pseudo element state (such as hover), or at which
-    point in an animation transition between two states an element currently
-    is.
+    element is in a CSS pseudo element state (such as hover).  (Although, you
+    can listen to
+    [`'mousenter'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseenter_event),
+    and
+    [`'mouseleave'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseleave_event)
+    events, and can check which the currently focused document element is.)
+    And you can't directly tell how far a transition animation has progressed.
+    (If you install
+    [animation event listeners](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Animations/Using#using_animation_events)
+    before an animation starts, you could calculate its progress by
+    replicating the browser logic for keeping track of what direction it's
+    moving in, and how much time has elapsed since the last iteration
+    started.)
     * While you can use some element style values, such as font size, or
       padding dimensions in CSVG expressions, you explicitly specify the
       pseudo element whose style you're querying, and you cannot directly
       write expressions that respond to current CSS pseudo element state, or
       transitions between states.
       * You can, however, use some tricks.  E.g., if you wrap an element with
-        CSS pseudo element states (e.g., in a `</g>` like
-        `<g><text>Label</text></g>`), the container element's bounding box
-        will respond to size changes of the wrapped element's CSS pseudo
-        element state, and you can use bounding box dimensions in a CSVG
-        expression.
+        CSS pseudo element states (e.g., a `<text/>` with `:hover` in a `</g>`
+        like `<g><text>Label</text></g>`), the container element's (`<g/>`'s)
+        bounding box will respond to size changes of the wrapped element's
+        (`<text/>`'s) CSS pseudo element state, and you can use bounding box
+        dimensions in a CSVG expression.
       * You won't, however, be able to use this trick to respond to, e.g.,
         color, or stroke width changes.  (The latter, at least until the
         [`getBBox` `{ stroke: true }` option](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#stroke)
         is widely implemented among browsers.)
+      * It is possible to use other tricks to respond to CSS style changes,
+        e.g. by associating a transition animation with a pseudo-element
+        change, and listening for events like
+        ['animationstart'](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Animations/Using#using_animation_events)
+        on an `Element` as is done by libraries like
+        [Style Observer](https://github.com/LeaVerou/style-observer), and
+        [CSS Variable Observer](https://github.com/fluorumlabs/css-variable-observer/blob/master/src/index.ts).
   * JavaScript has
     [`MutationObserver`](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
     for handling DOM mutations, and
@@ -263,7 +280,7 @@ in the documentation.
 * [ ] Static linting (unused constants, access to undefined or disallowed
       identifiers, circular dependencies, expression syntax validation, etc.)
 * [ ] Non-abysmal unit test code coverage, and code clean-up.
-* [ ] Integrate with [SSVG](https://github.com/michaschwab/ssvg)[^3]
+* [ ] Integrate with [SSVG](https://github.com/michaschwab/ssvg).[^3]
 
 [^3]: See
       [Scalable Scalable Vector Graphics: Automatic Translation of Interactive SVGs to a Multithread VDOM for Fast Rendering](https://jeffhuang.com/papers/SSVG_TVCG22.pdf)
