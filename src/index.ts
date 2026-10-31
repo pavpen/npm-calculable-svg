@@ -44,7 +44,7 @@ export const processDocument = (document: Document): void => {
   );
 
   while (treeWalker.nextNode()) {
-    const svgElement = treeWalker.currentNode as SVGElement;
+    const svgElement = treeWalker.currentNode as SVGSVGElement;
     const csvgDocument = CsvgDocument.forSvgElement(svgElement);
 
     csvgDocument.render();

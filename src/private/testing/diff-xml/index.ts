@@ -67,7 +67,7 @@ destinationNode: ${JSON.stringify(destinationNode)}!`,
             sourceNodePath: [...this.sourceChildIndexPath],
             sourceValue: sourceNode,
             destinationNodePath: [...this.destinationChildIndexPath],
-            destiantionValue: destinationNode,
+            destinationValue: destinationNode,
           }),
         );
       }
@@ -227,7 +227,7 @@ destinationNode: ${JSON.stringify(destinationNode)}!`,
               elementChildIndexPath: [...this.destinationChildIndexPath],
               attributeName,
             }),
-            destiantionValue: destinationValue.toString(),
+            destinationValue: destinationValue.toString(),
           }),
         );
       }

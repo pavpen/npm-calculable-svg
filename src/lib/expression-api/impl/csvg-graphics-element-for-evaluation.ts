@@ -1,5 +1,5 @@
 import { CsvgDomRect as JsCsvgDomRect } from '../../api/csvg-dom-rect';
-import type { EvaluationState } from '../../private/evaluation-helpers';
+import type { EvaluationState } from '../../private/evaluation-state';
 import type { CsvgGraphicsElement } from '../csvg-graphics-element';
 import { CsvgDomRectForEvaluation } from './csvg-dom-rect-for-evaluation';
 import { CsvgElementForEvaluation } from './csvg-element-for-evaluation';

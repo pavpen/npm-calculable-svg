@@ -255,10 +255,15 @@ in the documentation.
         [`ResizeObserver`](https://developer.mozilla.org/en-US/docs/Web/API/Resize_Observer_API),
         rather than polling, where possible (e.g., for `width`, but not `x` of
         a `BBox`).
-  * [ ] Be able to pause rendering live updates for CSVG documents not in
-        view.  (E.g., using
-        [`IntersectionObserver`](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API).)
+  * [x] Be able to pause rendering live updates for CSVG documents not in
+        view.  (Can implement in client code, e.g., using
+        [`IntersectionObserver`](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API),
+        and `CsvgDocument.stopLiveUpdate()`.)
   * [ ] Be able to transpile CSVG expressions to JavaScript (or Web Assembly).
 * [ ] Static linting (unused constants, access to undefined or disallowed
       identifiers, circular dependencies, expression syntax validation, etc.)
 * [ ] Non-abysmal unit test code coverage, and code clean-up.
+* [ ] Integrate with [SSVG](https://github.com/michaschwab/ssvg)[^3]
+
+[^3]: See
+      [Scalable Scalable Vector Graphics: Automatic Translation of Interactive SVGs to a Multithread VDOM for Fast Rendering](https://jeffhuang.com/papers/SSVG_TVCG22.pdf)

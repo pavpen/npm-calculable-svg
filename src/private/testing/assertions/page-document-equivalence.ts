@@ -117,7 +117,7 @@ Actual document source code:
 ${actualSource}
 
 Differences:
-${JSON.stringify(diffXmlStrings(expectedSource, actualSource).toJsValue(), null, 2)}
+${JSON.stringify(diffXmlStrings(expectedSource, actualSource).toWebBuiltIns(), null, 2)}
 `;
       },
       pass: isAssertionPassing,

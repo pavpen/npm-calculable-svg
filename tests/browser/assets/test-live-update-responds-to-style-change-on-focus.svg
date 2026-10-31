@@ -1,0 +1,42 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+    xmlns:attr-output-name="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/attribute-name"
+    xmlns:const-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/const-expression/jinja"
+    attr-expr:viewbox="
+      {{- Math.round(document.getConst('labelBBox').x) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').y) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').width) }}{{ ' ' }}
+      {{- Math.round(document.getConst('labelBBox').height) }}"
+    attr-output-name:viewbox="viewBox"
+>
+    <title>The text 'La belle' with an automatically-calculated bounding box</title>
+    <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
+    <style>
+        /* Use a fixed to font to avoid test output changes due to font substitution: */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;display=swap');
+        .label {
+            font-size: 48px;
+            font-family: "Noto Serif", serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+        }
+        .label:focus {
+            font-size: 60px;
+            font-family: "Noto Serif", serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+        }
+    </style>
+    <csvg:consts
+        const-expr:labelBBox="document.localIdToElement.get('label').getBBox()"
+    />
+    <text id="label" csvg:doc-local-id="label" class="label"
+        tabindex="0"
+        text-anchor="middle">La belle</text>
+</svg>

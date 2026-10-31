@@ -167,11 +167,15 @@ without an attribute name!  Expression: ${this.toString()}.`,
     return attribute;
   }
 
-  toJs() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       element: this.element,
       expression: this.expression,
-    };
+    });
   }
 
   toString(): string {

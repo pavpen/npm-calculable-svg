@@ -10,11 +10,11 @@
         {{ document.localIdToElement.get('content').getBBox().x -
             document.getConst('borderStrokeWidthPx') * Math.sqrt(3) }}
         {{ document.localIdToElement.get('content').getBBox().y -
-            document.getConst('borderStrokeWidthPx') * 2 / Math.sqrt(3) }}
+            document.getConst('borderStrokeWidthPx') * 2 }}
         {{ document.localIdToElement.get('content').getBBox().width +
             document.getConst('borderStrokeWidthPx') * 2 * Math.sqrt(3) }}
         {{ document.localIdToElement.get('content').getBBox().height +
-            document.getConst('borderStrokeWidthPx') * (1 + 2 / Math.sqrt(3)) }}"
+            document.getConst('borderStrokeWidthPx') * 2.5 }}"
 >
     <title>The title text 'Title', followed by subtitle text
         'Beware of titles' inside an triangular warning-sign border</title>

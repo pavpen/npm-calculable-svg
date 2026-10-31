@@ -1,6 +1,4 @@
-import { AttributeDependencies } from '../private/attribute-dependencies';
-import { AttributeDependencyCalculator } from '../private/attribute-dependency-calculator';
-import { EvaluationState } from '../private/evaluation-helpers';
+import { EvaluationState } from '../private/evaluation-state';
 import { JinjaEvaluator } from '../private/jinja-evaluator';
 import { InvalidatedCalculables } from '../private/reverse-dependencies/invalidated-calculables';
 import { calculateElementXPath } from '../private/xpath-helpers';
@@ -126,7 +124,7 @@ interface CsvgDocumentGlobalThis {
   $singletonsPavpenDevCsvgDocument: CsvgDocumentClassSingletons | undefined;
 }
 interface CsvgDocumentClassSingletons {
-  svgElementToCsvgDocument: WeakMap<SVGElement, CsvgDocument>;
+  svgElementToCsvgDocument: WeakMap<SVGSVGElement, CsvgDocument>;
 }
 
 export class CsvgDocument {
@@ -136,15 +134,23 @@ export class CsvgDocument {
 
   private readonly evaluationInformation: DocumentEvaluationInformation;
   private readonly evaluationState: EvaluationState;
-  private readonly svgElement: SVGElement;
+  private readonly svgElement: SVGSVGElement;
   private readonly options: CsvgDocumentOptions;
   private mutationObserver: MutationObserver = new MutationObserver(
     this.createHandleDocumentMutationsCallback(),
   );
   private pollStyleUpdatesTimeoutId: ReturnType<typeof setTimeout> | undefined =
     undefined;
+  private isStyleUpdatesWatchEnabled: boolean = false;
 
-  static forSvgElement(svgElement: SVGElement): CsvgDocument {
+  /**
+   * Returns a {@link CsvgDocument} instance for a given DOM `SVGElement`
+   *
+   * This method may return the same instance for the same DOM element (e.g.,
+   * to avoid conflicts between different `CsvgDocument` instances updating
+   * the same DOM tree).
+   */
+  static forSvgElement(svgElement: SVGSVGElement): CsvgDocument {
     let classSingletons = (globalThis as unknown as CsvgDocumentGlobalThis)
       .$singletonsPavpenDevCsvgDocument;
     if (typeof classSingletons === 'undefined') {
@@ -169,9 +175,13 @@ export class CsvgDocument {
     return result;
   }
 
+  /**
+   * Don't call this constructor from client code.  Use {@link forSvgElement}
+   * instead
+   */
   constructor(
     privateConstructorKey: CsvgDocumentPrivateConstructorKey,
-    svgElement: SVGElement,
+    svgElement: SVGSVGElement,
   ) {
     if (privateConstructorKey !== CsvgDocument.#privateConstructorKey) {
       throw Error(
@@ -218,13 +228,18 @@ export class CsvgDocument {
       }
       console.debug('Evaluated document.', {
         reverseDependencies:
-          this.evaluationState.reverseDependencies.toJsValue(),
+          this.evaluationState.reverseDependencies.toWebBuiltIns(),
       });
     } finally {
       console.groupEnd();
     }
   }
 
+  /**
+   * Evaluates, and substitutes Calculable SVG expressions in the document,
+   * starts watching for DOM tree mutations, and style updates (if live update
+   * is enabled)
+   */
   render() {
     this.options.calculateFromRootNode(
       this.svgElement,
@@ -241,7 +256,10 @@ export class CsvgDocument {
         Number.isFinite(styleLiveUpdateDelayMillis) &&
         styleLiveUpdateDelayMillis >= 0
       ) {
+        this.isStyleUpdatesWatchEnabled = true;
         this.watchStyleUpdates();
+      } else {
+        this.isStyleUpdatesWatchEnabled = false;
       }
     }
   }
@@ -295,7 +313,7 @@ export class CsvgDocument {
     });
   }
 
-  watchDocumentMutations(): void {
+  private watchDocumentMutations(): void {
     this.resumeMutationObserver();
 
     console.debug('Watching for document mutations.', {
@@ -348,7 +366,7 @@ export class CsvgDocument {
     }
   }
 
-  watchStyleUpdates(): void {
+  private watchStyleUpdates(): void {
     if (typeof this.pollStyleUpdatesTimeoutId !== 'undefined') {
       console.warn(
         'Call to start watching style updates when there already is a timeout \
@@ -366,10 +384,12 @@ ID for a style updates poll!  Ignoring request.',
 
       this.handleReferencedStyleChanges(invalidatedCalculables);
 
-      this.pollStyleUpdatesTimeoutId = setTimeout(
-        pollForStyleUpdates,
-        this.options.styleLiveUpdateDelayMillis,
-      );
+      if (this.isStyleUpdatesWatchEnabled) {
+        this.pollStyleUpdatesTimeoutId = setTimeout(
+          pollForStyleUpdates,
+          this.options.styleLiveUpdateDelayMillis,
+        );
+      }
     };
 
     this.pollStyleUpdatesTimeoutId = setTimeout(
@@ -383,27 +403,34 @@ ID for a style updates poll!  Ignoring request.',
     });
   }
 
+  stopLiveUpdate() {
+    this.isStyleUpdatesWatchEnabled = false;
+    const pollStyleUpdatesTimeoutId = this.pollStyleUpdatesTimeoutId;
+
+    if (typeof pollStyleUpdatesTimeoutId !== 'undefined') {
+      clearTimeout(pollStyleUpdatesTimeoutId);
+    }
+
+    this.stopAndClearMutationObserver();
+  }
+
+  startLiveUpdate() {
+    this.evaluateOnce();
+    this.watchDocumentMutations();
+    this.isStyleUpdatesWatchEnabled = true;
+    this.watchStyleUpdates();
+  }
+
+  /**
+   * Returns debug information about the state, since the last performed
+   * render
+   */
   calculateDebugInformation() {
-    // Calculate expression dependencies:
-    console.debug(`Calculating expression dependency graph.`);
-
-    this.evaluationInformation.calculateForSvgElement(this.svgElement);
-
-    const jinjaEvaluator = new JinjaEvaluator();
-    const attributeExpressionDependencies = new AttributeDependencies();
-    const attributeDependencyCalculator = new AttributeDependencyCalculator({
-      outputDependencies: attributeExpressionDependencies,
-      documentReferencedElements:
-        this.evaluationInformation.documentReferencedElements,
-      documentEvaluationInformation: this.evaluationInformation,
-      jinjaEvaluator,
-    });
-    attributeDependencyCalculator.calculate();
-
     return {
-      attributeExpressionDependencies: attributeExpressionDependencies.toJs(),
       referencedElements:
-        this.evaluationInformation.documentReferencedElements.toJs(),
+        this.evaluationInformation.documentReferencedElements.toWebBuiltIns(),
+      reverseDependencies:
+        this.evaluationState.reverseDependencies.toWebBuiltIns(),
     };
   }
 }

@@ -16,10 +16,26 @@ export class ExpressionReverseDependencies {
     this.lastExpressionString = lastExpressionString;
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       lastExpressionString: this.lastExpressionString,
-      reverseDependencies: this.reverseDependencies.toJsValue(),
-    };
+      reverseDependencies: this.reverseDependencies.toWebBuiltIns(),
+    });
+  }
+
+  /**
+   * Returns the instance represented as primitive types serializable by
+   * `JSON.stringify` (Object, Array, string, number, boolean, undefined,
+   * null)
+   */
+  toStringifiable() {
+    return Object.freeze({
+      lastExpressionString: this.lastExpressionString,
+      reverseDependencies: this.reverseDependencies.toStringifiable(),
+    });
   }
 }

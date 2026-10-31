@@ -1,4 +1,4 @@
-import type { CsvgDomRect, CsvgDomRectProperties } from '../api/csvg-dom-rect';
+import type { CsvgDomRect } from '../api/csvg-dom-rect';
 import type { CsvgUsedStyleDimensions } from '../api/csvg-used-style-dimensions';
 import {
   CircularAttributeSettingExpressionError,
@@ -6,7 +6,6 @@ import {
   InternalInterpreterError,
   InvalidAttributeExpressionError,
   InvalidExpressionError,
-  InvalidJinjaExpressionError,
   InvalidStringValueError,
   UndefinedConstantError,
 } from '../api/faults';
@@ -22,100 +21,6 @@ import {
 import { ExpressionReverseDependencies } from './reverse-dependencies/expression-reverse-dependencies';
 import type { InvalidatedCalculables } from './reverse-dependencies/invalidated-calculables';
 import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
-
-export interface CsvgElement {
-  readonly getBBox?: () => CsvgDomRectProperties | undefined;
-  readonly getBoundingClientRect?: () => CsvgDomRectProperties | undefined;
-  readonly getAttribute: (qualifiedName: string) => string | null;
-}
-
-export interface CsvgDocument {
-  readonly getElementById: (id: string) => CsvgElement | null;
-}
-
-/**
- * Replaces expressions like
- * `{{ document.getElementById('label').getBBox().width }}` with their
- * evaluation results in a given expression string
- *
- * @param expression to evaluate
- */
-export const evaluateJinjaTemplateString = (
-  expression: string,
-  options: {
-    expressionSource: Attr;
-    globalScope: JinjaEvaluationScope;
-    jinjaEvaluator: JinjaEvaluator;
-  },
-): string => {
-  const { expressionSource, globalScope, jinjaEvaluator } = options;
-
-  let result: string;
-  try {
-    result = jinjaEvaluator.expandString(expression, globalScope);
-  } catch (e) {
-    if (e instanceof InternalInterpreterError) {
-      e.add_note(
-        `While evaluating Jinja template string: ${JSON.stringify(expression)}`,
-      );
-      e.add_note(
-        `Expression definition attribute: ${calculateAttrXPath(expressionSource)}`,
-      );
-      throw e;
-    }
-    throw new InvalidAttributeExpressionError({
-      expressionString: expression,
-      expressionDefinitionAttribute: expressionSource,
-      cause: e as Error,
-    });
-  }
-
-  console.debug('Evaluated Jinja template.', {
-    expression,
-    value: result,
-  });
-
-  return result;
-};
-
-/**
- * Returns the value of a Jinja expression like
- * `document.getElementById('label').getBBox().width`
- *
- * @param expression to evaluate
- */
-const evaluateJinjaExpressionString = (
-  expression: string,
-  options: {
-    globalScope: JinjaEvaluationScope;
-    jinjaEvaluator: JinjaEvaluator;
-  },
-): unknown => {
-  const { globalScope, jinjaEvaluator } = options;
-
-  let result: unknown;
-  try {
-    result = jinjaEvaluator.eval(expression, globalScope);
-  } catch (e) {
-    if (e instanceof InternalInterpreterError) {
-      e.add_note(
-        `While evaluating Jinja expression string: ${JSON.stringify(expression)}`,
-      );
-      throw e;
-    }
-    throw new InvalidJinjaExpressionError({
-      expressionString: expression,
-      cause: e as Error,
-    });
-  }
-
-  console.debug('Evaluated Jinja expression.', {
-    expression,
-    value: result,
-  });
-
-  return result;
-};
 
 export class EvaluationState {
   readonly documentEvaluationInformation: DocumentEvaluationInformation;
@@ -503,11 +408,20 @@ expression: ${JSON.stringify(statementString)}`,
     disallowedExpressionAttributes.add(expressionSource);
     this.expressionsUnderEvaluation.push(expressionSource);
 
-    const expressionValue = evaluateJinjaTemplateString(valueExpressionString, {
-      expressionSource,
-      globalScope: jinjaGlobalScope,
-      jinjaEvaluator,
-    });
+    let renderResult: string;
+    try {
+      renderResult = jinjaEvaluator.renderTemplateString(
+        valueExpressionString,
+        jinjaGlobalScope,
+      );
+    } catch (e) {
+      throw new InvalidAttributeExpressionError({
+        expressionString: valueExpressionString,
+        expressionDefinitionAttribute: expressionSource,
+        cause: e as Error,
+      });
+    }
+    const expressionValue = renderResult;
 
     if (this.expressionsUnderEvaluation.pop() !== expressionSource) {
       throw new InternalInterpreterError(
@@ -533,7 +447,7 @@ expression: ${JSON.stringify(statementString)}`,
       reverseDependencies:
         this.reverseDependencies.attributeToReverseDependencies
           .get(expressionSource)
-          ?.toJsValue(),
+          ?.toWebBuiltIns(),
     });
 
     renderedAttributes.add(expressionSource);
@@ -582,7 +496,7 @@ expression: ${JSON.stringify(statementString)}`,
       element: element,
       reverseDependencies: this.reverseDependencies.elementToReverseDependencies
         .get(element)
-        ?.toJsValue(),
+        ?.toWebBuiltIns(),
     });
 
     renderedElements.add(element);
@@ -629,10 +543,10 @@ expression: ${JSON.stringify(statementString)}`,
 
     let expressionValue: unknown;
     try {
-      expressionValue = evaluateJinjaExpressionString(expressionString, {
-        globalScope: this.jinjaGlobalScope,
-        jinjaEvaluator: this.jinjaEvaluator,
-      });
+      expressionValue = this.jinjaEvaluator.eval(
+        expressionString,
+        this.jinjaGlobalScope,
+      );
     } catch (e) {
       if (e instanceof InvalidExpressionError) {
         e.add_note(`While evaluating constant ${JSON.stringify(constName)}`);
@@ -649,7 +563,7 @@ expression: ${JSON.stringify(statementString)}`,
       reverseDependencies:
         this.reverseDependencies.constNameToReverseDependencies
           .get(constName)
-          ?.toJsValue(),
+          ?.toWebBuiltIns(),
     });
 
     this.constNameToValue.set(constName, expressionValue);

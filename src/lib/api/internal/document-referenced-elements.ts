@@ -46,13 +46,17 @@ export class ReferencedElement {
     this.jinjaExpressionAttributes = new Set(jinjaExpressionAttributes);
   }
 
-  toJs(): ReferencedElementJsRepr {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns(): ReferencedElementJsRepr {
+    return Object.freeze({
       element: this.element,
-      closestDescendents: Array.from(this.closestDescendents).map((n) =>
-        n.toJs(),
+      closestDescendents: Array.from(this.closestDescendents).map((node) =>
+        node.toWebBuiltIns(),
       ),
-    };
+    });
   }
 }
 
@@ -198,7 +202,7 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
    * @param element DOM tree to process
    */
   private collectExpressionAttributeElements(element: Element): void {
-    const treeWalker = document.createTreeWalker(
+    const treeWalker = element.ownerDocument.createTreeWalker(
       element,
       NodeFilter.SHOW_ELEMENT,
     );
@@ -250,9 +254,15 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
     }
   }
 
-  toJs() {
-    return Array.from(this.elementToReferencedElement.values()).map(
-      (referencedElement) => referencedElement.toJs(),
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze(
+      Array.from(this.elementToReferencedElement.values()).map(
+        (referencedElement) => referencedElement.toWebBuiltIns(),
+      ),
     );
   }
 

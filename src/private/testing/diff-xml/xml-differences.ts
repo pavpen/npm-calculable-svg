@@ -42,7 +42,7 @@ export class AttributePath {
     this.attributeName = attributeName;
   }
 
-  toJsValue(): string {
+  toString(): string {
     const elementXPath = elementChildIndexPathToXPath(
       this.elementChildIndexPath,
     );
@@ -56,32 +56,36 @@ export class UnequalAttributeValues {
   readonly sourceAttributePath: AttributePath;
   readonly sourceValue: string;
   readonly destinationAttributePath: AttributePath;
-  readonly destiantionValue: string;
+  readonly destinationValue: string;
 
   constructor({
     sourceAttributePath,
     sourceValue,
     destinationAttributePath,
-    destiantionValue,
+    destinationValue,
   }: {
     sourceAttributePath: AttributePath;
     sourceValue: string;
     destinationAttributePath: AttributePath;
-    destiantionValue: string;
+    destinationValue: string;
   }) {
     this.sourceAttributePath = sourceAttributePath;
     this.sourceValue = sourceValue;
     this.destinationAttributePath = destinationAttributePath;
-    this.destiantionValue = destiantionValue;
+    this.destinationValue = destinationValue;
   }
 
-  toJsValue() {
-    return {
-      sourceAttributePath: this.sourceAttributePath.toJsValue(),
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
+      sourceAttributePath: this.sourceAttributePath.toString(),
       sourceValue: this.sourceValue,
-      destinationAttributePath: this.destinationAttributePath.toJsValue(),
-      destiantionValue: this.destiantionValue,
-    };
+      destinationAttributePath: this.destinationAttributePath.toString(),
+      destinationValue: this.destinationValue,
+    });
   }
 }
 
@@ -100,11 +104,15 @@ export class MissingAttribute {
     this.missLocation = missLocation;
   }
 
-  toJsValue() {
-    return {
-      attributePath: this.attributePath.toJsValue(),
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
+      attributePath: this.attributePath.toString(),
       missLocation: ComparisonSource.toName(this.missLocation),
-    };
+    });
   }
 }
 
@@ -112,34 +120,38 @@ export class UnequalTextNodes {
   readonly sourceNodePath: ElementChildIndexPath;
   readonly sourceValue: string;
   readonly destinationNodePath: ElementChildIndexPath;
-  readonly destiantionValue: string;
+  readonly destinationValue: string;
 
   constructor({
     sourceNodePath,
     sourceValue,
     destinationNodePath,
-    destiantionValue,
+    destinationValue,
   }: {
     sourceNodePath: ElementChildIndexPath;
     sourceValue: string;
     destinationNodePath: ElementChildIndexPath;
-    destiantionValue: string;
+    destinationValue: string;
   }) {
     this.sourceNodePath = sourceNodePath;
     this.sourceValue = sourceValue;
     this.destinationNodePath = destinationNodePath;
-    this.destiantionValue = destiantionValue;
+    this.destinationValue = destinationValue;
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       sourceNodePath: elementChildIndexPathToXPath(this.sourceNodePath),
       sourceValue: this.sourceValue,
       destinationNodePath: elementChildIndexPathToXPath(
         this.destinationNodePath,
       ),
-      destiantionValue: this.destiantionValue,
-    };
+      destinationValue: this.destinationValue,
+    });
   }
 }
 
@@ -158,13 +170,17 @@ export class DifferentElementOrder {
     this.destinationElementPath = destinationElementPath;
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       sourceElementPath: elementChildIndexPathToXPath(this.sourceElementPath),
       destinationElementPath: elementChildIndexPathToXPath(
         this.destinationElementPath,
       ),
-    };
+    });
   }
 }
 
@@ -183,11 +199,15 @@ export class MissingElement {
     this.missLocation = missLocation;
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       elementPath: elementChildIndexPathToXPath(this.elementPath),
       missLocation: ComparisonSource.toName(this.missLocation),
-    };
+    });
   }
 }
 
@@ -198,17 +218,21 @@ export class DifferenceList {
   readonly elementOrderDifferences: DifferentElementOrder[] = [];
   readonly missingElements: MissingElement[] = [];
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       unequalAttributeValues: this.unequalAttributeValues.map((v) =>
-        v.toJsValue(),
+        v.toWebBuiltIns(),
       ),
-      missingAttributes: this.missingAttributes.map((v) => v.toJsValue()),
-      unequalTextNodes: this.unequalTextNodes.map((v) => v.toJsValue()),
+      missingAttributes: this.missingAttributes.map((v) => v.toWebBuiltIns()),
+      unequalTextNodes: this.unequalTextNodes.map((v) => v.toWebBuiltIns()),
       elementOrderDifferences: this.elementOrderDifferences.map((v) =>
-        v.toJsValue(),
+        v.toWebBuiltIns(),
       ),
-      missingElements: this.missingElements.map((v) => v.toJsValue()),
-    };
+      missingElements: this.missingElements.map((v) => v.toWebBuiltIns()),
+    });
   }
 }

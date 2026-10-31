@@ -2,7 +2,7 @@ import { CsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
 import { InternalInterpreterError } from '../../api/faults';
 import type { DocumentReferencedElements } from '../../api/internal/document-referenced-elements';
-import { calculateElementXPath } from '../xpath-helpers';
+import { calculateAttrXPath, calculateElementXPath } from '../xpath-helpers';
 import type { ElementReverseDependencies } from './element-reverse-dependencies';
 import type { ExpressionReverseDependencies } from './expression-reverse-dependencies';
 import type { InvalidatedCalculables } from './invalidated-calculables';
@@ -33,35 +33,6 @@ export class DocumentReverseDependencies {
     this.elementToReverseDependencies.clear();
     this.constNameToReverseDependencies.clear();
     this.attributeToReverseDependencies.clear();
-  }
-
-  toJsValue() {
-    return {
-      elementToReverseDependencies: new Map(
-        Array.from(this.elementToReverseDependencies.entries()).map(
-          ([element, reverseDependencies]) => [
-            element,
-            reverseDependencies.toJsValue(),
-          ],
-        ),
-      ),
-      constNameToReverseDependencies: Object.fromEntries(
-        Array.from(this.constNameToReverseDependencies.entries()).map(
-          ([constName, reverseDependencies]) => [
-            constName,
-            reverseDependencies.toJsValue(),
-          ],
-        ),
-      ),
-      attributeToReverseDependencies: new Map(
-        Array.from(this.attributeToReverseDependencies.entries()).map(
-          ([attribute, reverseDependencies]) => [
-            attribute,
-            reverseDependencies.toJsValue(),
-          ],
-        ),
-      ),
-    };
   }
 
   collectCalculablesDirectlyInvalidatedByStyle(
@@ -315,5 +286,72 @@ document re-calculation.',
           currentUsedStyleDimensions;
       }
     }
+  }
+
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
+      elementToReverseDependencies: new Map(
+        Array.from(this.elementToReverseDependencies.entries()).map(
+          ([element, reverseDependencies]) => [
+            element,
+            reverseDependencies.toWebBuiltIns(),
+          ],
+        ),
+      ),
+      constNameToReverseDependencies: Object.fromEntries(
+        Array.from(this.constNameToReverseDependencies.entries()).map(
+          ([constName, reverseDependencies]) => [
+            constName,
+            reverseDependencies.toWebBuiltIns(),
+          ],
+        ),
+      ),
+      attributeToReverseDependencies: new Map(
+        Array.from(this.attributeToReverseDependencies.entries()).map(
+          ([attribute, reverseDependencies]) => [
+            attribute,
+            reverseDependencies.toWebBuiltIns(),
+          ],
+        ),
+      ),
+    });
+  }
+
+  /**
+   * Returns the instance represented as primitive types serializable by
+   * `JSON.stringify` (Object, Array, string, number, boolean, undefined,
+   * null)
+   */
+  toStringifiable() {
+    return Object.freeze({
+      elementToReverseDependencies: Object.fromEntries(
+        Array.from(this.elementToReverseDependencies.entries()).map(
+          ([element, reverseDependencies]) => [
+            calculateElementXPath(element),
+            reverseDependencies.toStringifiable(),
+          ],
+        ),
+      ),
+      constNameToReverseDependencies: Object.fromEntries(
+        Array.from(this.constNameToReverseDependencies.entries()).map(
+          ([constName, reverseDependencies]) => [
+            constName,
+            reverseDependencies.toStringifiable(),
+          ],
+        ),
+      ),
+      attributeToReverseDependencies: new Map(
+        Array.from(this.attributeToReverseDependencies.entries()).map(
+          ([attribute, reverseDependencies]) => [
+            calculateAttrXPath(attribute),
+            reverseDependencies.toStringifiable(),
+          ],
+        ),
+      ),
+    });
   }
 }

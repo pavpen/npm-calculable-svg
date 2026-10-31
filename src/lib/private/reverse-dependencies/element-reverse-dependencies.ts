@@ -13,11 +13,27 @@ export class UsedStyleDimensionsReverseDependencies {
     this.lastUsedStyleDimensions = lastUsedStyleDimensions;
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       lastUsedStyleDimensions: this.lastUsedStyleDimensions.toObject(),
-      reverseDependencies: this.reverseDependencies.toJsValue(),
-    };
+      reverseDependencies: this.reverseDependencies.toWebBuiltIns(),
+    });
+  }
+
+  /**
+   * Returns the instance represented as primitive types serializable by
+   * `JSON.stringify` (Object, Array, string, number, boolean, undefined,
+   * null)
+   */
+  toStringifiable() {
+    return Object.freeze({
+      lastUsedStyleDimensions: this.lastUsedStyleDimensions.toObject(),
+      reverseDependencies: this.reverseDependencies.toStringifiable(),
+    });
   }
 }
 
@@ -56,7 +72,7 @@ Element path: ${JSON.stringify(calculateElementXPath(element))}.`,
         this.bboxReverseDependencies.isEmpty,
         `Element has no last calculated BBox value, but it has BBox reverse dependencies!  \
 Element path: ${calculateElementXPath(element)}, \
-reverse dependencies: ${JSON.stringify(this.toJsValue())}`,
+reverse dependencies: ${JSON.stringify(this.toWebBuiltIns())}`,
       );
 
       return false;
@@ -92,7 +108,7 @@ expressions, but it's not instanceof SVGGraphicsElement (which defines the \
         this.boundingClientRectReverseDependencies.isEmpty,
         `Element has no last calculated BoundingClientRect, but it has reverse dependencies!\
 Element path: ${calculateElementXPath(element)}, \
-reverse dependencies: ${JSON.stringify(this.boundingClientRectReverseDependencies.toJsValue())}`,
+reverse dependencies: ${JSON.stringify(this.boundingClientRectReverseDependencies.toWebBuiltIns())}`,
       );
 
       return false;
@@ -124,21 +140,48 @@ reverse dependencies: ${JSON.stringify(this.boundingClientRectReverseDependencie
     this.pseudoElementNameToUsedStyleDimensionDependencies.clear();
   }
 
-  toJsValue() {
-    return {
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
       lastBBox: this.lastBBox?.toObject(),
-      bboxReverseDependencies: this.bboxReverseDependencies.toJsValue(),
+      bboxReverseDependencies: this.bboxReverseDependencies.toWebBuiltIns(),
       lastBoundingClientRect: this.lastBoundingClientRect?.toObject(),
       boundingClientRectReverseDependencies:
-        this.boundingClientRectReverseDependencies.toJsValue(),
+        this.boundingClientRectReverseDependencies.toWebBuiltIns(),
       pseudoElementNameToUsedStyleDimensionDependencies: Object.fromEntries(
         Array.from(
           this.pseudoElementNameToUsedStyleDimensionDependencies.entries(),
         ).map(([pseudoElementName, reverseDependencies]) => [
           pseudoElementName,
-          reverseDependencies.toJsValue(),
+          reverseDependencies.toWebBuiltIns(),
         ]),
       ),
-    };
+    });
+  }
+
+  /**
+   * Returns the instance represented as primitive types serializable by
+   * `JSON.stringify` (Object, Array, string, number, boolean, undefined,
+   * null)
+   */
+  toStringifiable() {
+    return Object.freeze({
+      lastBBox: this.lastBBox?.toObject(),
+      bboxReverseDependencies: this.bboxReverseDependencies.toStringifiable(),
+      lastBoundingClientRect: this.lastBoundingClientRect?.toObject(),
+      boundingClientRectReverseDependencies:
+        this.boundingClientRectReverseDependencies.toWebBuiltIns(),
+      pseudoElementNameToUsedStyleDimensionDependencies: Object.fromEntries(
+        Array.from(
+          this.pseudoElementNameToUsedStyleDimensionDependencies.entries(),
+        ).map(([pseudoElementName, reverseDependencies]) => [
+          pseudoElementName,
+          reverseDependencies.toWebBuiltIns(),
+        ]),
+      ),
+    });
   }
 }

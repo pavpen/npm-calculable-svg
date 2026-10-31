@@ -1,4 +1,4 @@
-import type { EvaluationState } from '../../private/evaluation-helpers';
+import type { EvaluationState } from '../../private/evaluation-state';
 import type { CsvgDocument } from '../csvg-document';
 import type { CsvgElement } from '../csvg-element';
 import type { ImmutableMap } from '../immutable-map';

@@ -1,0 +1,13 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:csvg="http://xmlns.pavpen.dev/calculable-svg/0.1"
+    xmlns:attr-expr="http://xmlns.pavpen.dev/calculable-svg/0.1/attribute-expression/jinja"
+>
+    <title>Unit test sample that has a dependency between constants</title>
+    <csvg:consts>
+        <csvg:const csvg:name="leaf">12</csvg:const>
+        <csvg:const csvg:name="dependent">
+            document.getConst('leaf') * document.getConst('leaf')
+        </csvg:const>
+    </csvg:consts>
+</svg>

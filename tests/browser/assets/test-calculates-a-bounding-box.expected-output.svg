@@ -15,7 +15,7 @@
     <!--
         When SVG is embedded in an HTML document, the browser may parse it
         using HTML, rather than XML parsing rules.  In this case attribute
-        names are lowecased, and namespace definition attributes are ignored.
+        names are lowercased, and namespace definition attributes are ignored.
         In the above example, we test the use of `attr-output-name:` to
         capitalize the name of the output attribute.
     -->
@@ -23,7 +23,7 @@
     <script crossorigin="anonymous" href="evaluate-for-current-document.js"></script>
     <style>
         /* Use a fixed to font to avoid test output changes due to font substitution: */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;display=swap');
         .label {
             font-size: 48px;
             font-family: "Noto Serif", serif;

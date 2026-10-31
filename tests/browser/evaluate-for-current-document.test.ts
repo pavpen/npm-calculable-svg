@@ -1,8 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect } from '@rstest/playwright';
-import type { ConsoleMessage, Page } from 'playwright';
 import { isPageDocumentEquivalentToSvgSource } from '../../src/private/testing/assertions/page-document-equivalence';
+import {
+  consoleExceptionsToString,
+  consoleMessagesToString,
+} from '../../src/private/testing/browser-console-helpers';
 import { testWithTemporaryDirectoryFixture } from '../../src/private/testing/fixtures/test-with-temporary-directory';
 import { serveGeneratedDirectory } from '../../src/private/testing/serve-generated-directory';
 
@@ -15,53 +18,6 @@ const testWithTemporaryDirectory = testWithTemporaryDirectoryFixture({
   temporaryDirectoryRoot: TEMP_DIR,
   autoClean: true,
 });
-
-/**
- * Collect console messages from a Playwright browser page in an array
- */
-const collectPageConsoleMessages: (
-  page: Page,
-  outputContainer: ConsoleMessage[],
-) => void = (page, outputContainer) => {
-  page.on('console', (msg) => {
-    outputContainer.push(msg);
-  });
-};
-
-/**
- * Collect console messages from a Playwright browser page in an array
- */
-const collectPageExceptions: (page: Page, outputContainer: Error[]) => void = (
-  page,
-  outputContainer,
-) => {
-  page.on('pageerror', (exception) => {
-    outputContainer.push(exception);
-  });
-};
-
-const consoleMessagesToString = (consoleMessages: ConsoleMessage[]) =>
-  consoleMessages
-    .map(
-      (m) =>
-        `[${m.location().lineNumber}:${m.location().column} ${m.type()} ${m.location().url}] ${m.text()}`,
-    )
-    .join('\n');
-
-const consoleExceptionToString = (consoleException: Error): string => {
-  const cause = consoleException.cause;
-  const causeMessage = cause
-    ? `\ncaused by ${consoleExceptionToString(cause as Error)}`
-    : '';
-  const stackMessage = consoleException.stack
-    ? `\n\n* Stack trace:\n${consoleException.stack}`
-    : '';
-
-  return `[Exception ${consoleException.name}] ${consoleException.message}${causeMessage}${stackMessage}`;
-};
-
-const consoleExceptionsToString = (consoleExceptions: Error[]): string =>
-  consoleExceptions.map(consoleExceptionToString).join('\n\n');
 
 describe('<script href="evaluate-for-current-document.js"/>', async () => {
   testWithTemporaryDirectory(
@@ -91,10 +47,6 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
         },
       );
       const pageUrl = `${baseUrl}/document.svg`;
-      const consoleMessages: ConsoleMessage[] = [];
-      collectPageConsoleMessages(page, consoleMessages);
-      const consoleExceptions: Error[] = [];
-      collectPageExceptions(page, consoleExceptions);
 
       // Act:
       await page.goto(pageUrl);
@@ -108,14 +60,14 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
             nonCalculableSvgSource,
           ),
         ).toBeTrue();
-        expect(consoleMessages).toHaveLength(0);
-        expect(consoleExceptions).toHaveLength(0);
+        expect(await page.consoleMessages()).toEqual([]);
+        expect(await page.pageErrors()).toEqual([]);
       } catch (e) {
         console.log(
-          `Browser console messages:\n${consoleMessagesToString(consoleMessages)}`,
+          `Browser console messages:\n${consoleMessagesToString(await page.consoleMessages())}`,
         );
         console.log(
-          `Browser console exceptions:\n${consoleExceptionsToString(consoleExceptions)}`,
+          `Browser console exceptions:\n${consoleExceptionsToString(await page.pageErrors())}`,
         );
         throw e;
       }
@@ -146,6 +98,11 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
         assetsDir,
         expectedOutputFileName,
       );
+
+      if (!(await fs.stat(expectedOutputFilePath)).isFile()) {
+        continue;
+      }
+
       const testName = testFileNameRoot
         .substring(inputFileNamePrefix.length)
         .replaceAll('-', ' ');
@@ -173,10 +130,6 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
         },
       );
       const pageUrl = `${baseUrl}/document.svg`;
-      const consoleMessages: ConsoleMessage[] = [];
-      collectPageConsoleMessages(page, consoleMessages);
-      const consoleExceptions: Error[] = [];
-      collectPageExceptions(page, consoleExceptions);
 
       // Act:
       await page.goto(pageUrl);
@@ -190,14 +143,60 @@ describe('<script href="evaluate-for-current-document.js"/>', async () => {
             expectedSvgProcessedSource,
           ),
         ).toBeTrue();
-        expect(consoleMessages).toEqual([]);
-        expect(consoleExceptions).toEqual([]);
+        expect(await page.consoleMessages()).toEqual([]);
+        expect(await page.pageErrors()).toEqual([]);
       } catch (e) {
         console.log(
-          `Console messages:\n${consoleMessagesToString(consoleMessages)}`,
+          `Console messages:\n${consoleMessagesToString(await page.consoleMessages())}`,
         );
         console.log(
-          `Page exceptions:\n${consoleExceptionsToString(consoleExceptions)}`,
+          `Page exceptions:\n${consoleExceptionsToString(await page.pageErrors())}`,
+        );
+        throw e;
+      }
+    },
+  );
+
+  testWithTemporaryDirectory(
+    'live update responds to style change on focus',
+    async ({ page, serve, temporaryDirectory }) => {
+      // Setup:
+      const { baseUrl } = await serveGeneratedDirectory(
+        serve,
+        temporaryDirectory,
+        {
+          [EVALUATE_SCRIPT_BASENAME]: { path: EVALUATE_SCRIPT_DIST_PATH },
+          'document.svg': {
+            path: path.join(
+              assetsDir,
+              'test-live-update-responds-to-style-change-on-focus.svg',
+            ),
+          },
+        },
+      );
+      const pageUrl = `${baseUrl}/document.svg`;
+
+      // Act:
+      await page.goto(pageUrl);
+      await page.waitForLoadState();
+      const startViewBox = await page.locator('svg').getAttribute('viewBox');
+      await page.getByText('La belle').and(page.locator('text')).focus();
+      await expect(
+        page.getByText('La belle').and(page.locator('text')),
+      ).toBeFocused();
+      const endViewBox = await page.locator('svg').getAttribute('viewBox');
+
+      // Verify:
+      try {
+        expect(startViewBox).toEqual('-90 -51 180 65');
+        expect(endViewBox).toEqual('-112 -64 225 82');
+        expect(await page.pageErrors()).toEqual([]);
+      } catch (e) {
+        console.log(
+          `Browser console messages:\n${consoleMessagesToString(await page.consoleMessages())}`,
+        );
+        console.log(
+          `Browser console exceptions:\n${consoleExceptionsToString(await page.pageErrors())}`,
         );
         throw e;
       }

@@ -1,3 +1,5 @@
+import { calculateAttrXPath } from './xpath-helpers';
+
 /**
  * Stores a set of expressions in a Calculable SVG document that can be
  * evaluated (or, recalculated)
@@ -31,10 +33,26 @@ export class DocumentExpressionSet {
     this.constantNames.clear();
   }
 
-  toJsValue() {
-    return {
-      expressionAttrs: Array.from(this.expressionAttrs),
+  /**
+   * Returns the instance represented as JavaScript built-in data structures,
+   * and types, such as Array, Map, Object, Date, Element, Attr
+   */
+  toWebBuiltIns() {
+    return Object.freeze({
+      expressionAttrs: new Set(this.expressionAttrs),
+      constantNames: new Set(this.constantNames),
+    });
+  }
+
+  /**
+   * Returns the instance represented as primitive types serializable by
+   * `JSON.stringify` (Object, Array, string, number, boolean, undefined,
+   * null)
+   */
+  toStringifiable() {
+    return Object.freeze({
+      expressionAttrs: Array.from(this.expressionAttrs).map(calculateAttrXPath),
       constantNames: Array.from(this.constantNames),
-    };
+    });
   }
 }

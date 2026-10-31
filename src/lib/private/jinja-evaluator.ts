@@ -2,6 +2,7 @@ import * as huggingface_jinja from '@huggingface/jinja';
 import {
   InternalInterpreterError,
   InvalidExpressionError,
+  InvalidJinjaExpressionError,
   UnexpectedTrailingExpressionError,
 } from '../api/faults';
 
@@ -100,12 +101,20 @@ export class JinjaEvaluator {
     return value;
   }
 
-  expandString(
-    expressionString: string,
+  /**
+   * Returns the result of replacing expressions like
+   * `{{ document.getElementById('label').getBBox().width }}` with their
+   * evaluation results in a given template string
+   *
+   * @param templateString to evaluate (like
+   * `{{ document.getElementById('label').getBBox().width }}`)
+   */
+  renderTemplateString(
+    templateString: string,
     globalScope: JinjaEvaluationScope,
   ): string {
     const program = huggingface_jinja.parse(
-      huggingface_jinja.tokenize(expressionString),
+      huggingface_jinja.tokenize(templateString),
     );
 
     const interpreter = new huggingface_jinja.Interpreter(globalScope);
@@ -126,9 +135,14 @@ export class JinjaEvaluator {
     return resultValue.toString();
   }
 
+  /**
+   * Returns the value of a Jinja expression like
+   * `document.getElementById('label').getBBox().width`
+   */
   eval(expressionString: string, globalScope: JinjaEvaluationScope): unknown {
     // Unfortunately, "@huggingface/jinja" doesn't seem to expose parsing
-    // individual expressions:
+    // individual expressions.  Wrap the expression in a template
+    // `{{ expression }}` substitution:
     const program = huggingface_jinja.parse(
       huggingface_jinja.tokenize(`{{ ${expressionString} }}`),
     );
@@ -147,11 +161,19 @@ export class JinjaEvaluator {
     }
 
     const interpreter = new huggingface_jinja.Interpreter(globalScope);
-    const result: JinjaInterpreterValue = interpreter.evaluate(
-      program.body[0],
-      globalScope,
-    );
+    try {
+      const result: JinjaInterpreterValue = interpreter.evaluate(
+        // Strip the outer `{{ }}` in the `{{ expression }}` substitution:
+        program.body[0],
+        globalScope,
+      );
 
-    return interpreterToJavaScriptValue(result);
+      return interpreterToJavaScriptValue(result);
+    } catch (e) {
+      throw new InvalidJinjaExpressionError({
+        expressionString,
+        cause: e as Error,
+      });
+    }
   }
 }

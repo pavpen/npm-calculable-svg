@@ -1,6 +1,6 @@
 import { CsvgDomRect as JsCsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions as JsCsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
-import type { EvaluationState } from '../../private/evaluation-helpers';
+import type { EvaluationState } from '../../private/evaluation-state';
 import { attribute_expression } from '../../private/expression-api/attribute-expression';
 import type { CsvgElement } from '../csvg-element';
 import { CsvgDomRectForEvaluation } from './csvg-dom-rect-for-evaluation';

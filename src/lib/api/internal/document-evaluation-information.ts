@@ -40,7 +40,7 @@ export class DocumentEvaluationInformation {
   readonly documentReferencedElements: DocumentReferencedElements =
     new DocumentReferencedElements(this);
 
-  calculateForSvgElement(svgElement: SVGElement): void {
+  calculateForSvgElement(svgElement: SVGSVGElement): void {
     this.defaultXmlNamespaceUri = null;
     this.xmlNamePrefixToNamespaceUri.clear();
     this.collectXmlNsPrefixes(svgElement);
@@ -144,7 +144,7 @@ export class DocumentEvaluationInformation {
    * Builds the `docLocalIdToNode`
    */
   private processSvgElement(element: Element): void {
-    const treeWalker = document.createTreeWalker(
+    const treeWalker = element.ownerDocument.createTreeWalker(
       element,
       NodeFilter.SHOW_ELEMENT,
     );

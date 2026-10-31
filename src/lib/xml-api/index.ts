@@ -25,6 +25,10 @@ import type {
  * A CSVG document may look like:
  * {@include ../../../doc-builder/build/examples/underlined.svg.md}
  *
+ * For more examples, see the
+ * [Calculable SVG Examples](../../../doc-builder/build/examples/examples.md)
+ * page.
+ *
  * See:
  *
  * * {@link csvg_xml.attributes}

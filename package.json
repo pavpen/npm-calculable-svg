@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "author": "Pavel M. Penev",
-  "version": "0.0.0-alpha.0-13-g42e05db-dirty",
+  "version": "0.0.0-alpha.0-17-g7447a03",
   "private": false,
   "type": "module",
   "scripts": {
@@ -43,7 +43,10 @@
     "doc:build-all-versions": "npm run build && cd doc-builder/typedoc && npm run build-all-doc-versions"
   },
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "default": "./dist/index.js",
+      "debug": "./dist/index-debug.js"
+    },
     "./evaluate-for-current-document": "./dist/evaluate-for-current-document.js"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import type { EvaluationState } from '../../private/evaluation-helpers';
+import type { EvaluationState } from '../../private/evaluation-state';
 import type { CsvgGlobalNamespace } from '../csvg-global-namespace';
 import { CsvgDocumentForEvaluation } from './csvg-document-for-evaluation';
 import { MathNamespaceForEvaluation } from './math-namespace';
