@@ -147,35 +147,34 @@ To solve the above challenges we:
     find a summary of some of the related SVG embedding limitations in
     articles like
     [Using Custom Fonts With SVG in an Image Tag](https://css-tricks.com/using-custom-fonts-with-svg-in-an-image-tag/).)
-  * JavaScript currently doesn't seem to have a way to detect whether an
-    element is in a CSS pseudo element state (such as hover), or at which
-    point in an animation transition between two states an element currently
-    is.
-    * While you can use some element style values, such as font size, or
-      padding dimensions in CSVG expressions, you explicitly specify the
-      pseudo element whose style you're querying, and you cannot directly
-      write expressions that respond to current CSS pseudo element state, or
-      transitions between states.
-      * You can, however, use some tricks.  E.g., if you wrap an element with
-        CSS pseudo element states (e.g., in a `</g>` like
-        `<g><text>Label</text></g>`), the container element's bounding box
-        will respond to size changes of the wrapped element's CSS pseudo
-        element state, and you can use bounding box dimensions in a CSVG
-        expression.
-      * You won't, however, be able to use this trick to respond to, e.g.,
-        color, or stroke width changes.  (The latter, at least until the
-        [`getBBox` `{ stroke: true }` option](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox#stroke)
-        is widely implemented among browsers.)
+  * Responding to the current used style of an element has various
+    complexities, and relies on polling in the current implementation.  (See
+    also the following item on observing bounding boxes.)
+    * The DOM
+      [Element interface](https://developer.mozilla.org/en-US/docs/Web/API/Element)
+      doesn't currently seem to have a direct way to listen for style changes.
+      It's possible to listen to transition, and animation events like
+      [`'animationstart'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/animationstart_event),
+      [`'animationend'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/animationend_event),
+      [`'transitionstart'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/transitionstart_event),
+      and
+      [`'transitionend'`](https://developer.mozilla.org/en-US/docs/Web/API/Element/transitionend_event).
+      This is used in a trick for watching CSS property changes by creating an
+      animation for each watched property by libraries, such as
+      [Style Observer](https://github.com/LeaVerou/style-observer), and
+      [CSS Variable Observer](https://github.com/fluorumlabs/css-variable-observer/blob/master/src/index.ts).
+      (It does modify an element's `CSSStyleSheet`, but can improve
+      performance, and is often a good trade-off.)
   * JavaScript has
     [`MutationObserver`](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
     for handling DOM mutations, and
     [`ResizeObserver`](https://developer.mozilla.org/en-US/docs/Web/API/Resize_Observer_API)
     for handling element size changes efficiently.  This doesn't include
-    style changes which may not affect an element's size, such as the `x`, and
-    `y` offset of a bounding box, or `BoundingClientRect`.  This CSVG
-    implementation relies on polling to detect changes in such bounding box,
-    `BoundingClientRect`, and style properties.  This can degrade page render
-    times, if the number of used such properties is large.
+    changes (e.g., style changes) which may not affect an element's size, but
+    affect a bounding box, or `BoundingClientRect` property, such as `x`, or
+    `y`.  This CSVG implementation relies on polling to detect these changes.
+    This can degrade page render times, if the number of used such properties
+    is large.
     * An
       [`IntersectionObserver`](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)
       can be used as a trick to detect changes to the `x`, and `y` offset of
@@ -263,7 +262,7 @@ in the documentation.
 * [ ] Static linting (unused constants, access to undefined or disallowed
       identifiers, circular dependencies, expression syntax validation, etc.)
 * [ ] Non-abysmal unit test code coverage, and code clean-up.
-* [ ] Integrate with [SSVG](https://github.com/michaschwab/ssvg)[^3]
+* [ ] Integrate with [SSVG](https://github.com/michaschwab/ssvg).[^3]
 
 [^3]: See
       [Scalable Scalable Vector Graphics: Automatic Translation of Interactive SVGs to a Multithread VDOM for Fast Rendering](https://jeffhuang.com/papers/SSVG_TVCG22.pdf)
