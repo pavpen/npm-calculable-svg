@@ -330,7 +330,7 @@ export class CsvgDocument {
 
     console.groupCollapsed(
       'Processing invalidated calculables due to changes in referenced style.',
-      invalidatedCalculables.toObject(),
+      invalidatedCalculables.toWebBuiltIns(),
     );
 
     try {

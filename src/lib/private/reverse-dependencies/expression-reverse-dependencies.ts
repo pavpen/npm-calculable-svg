@@ -9,11 +9,11 @@ import { DocumentExpressionSet } from '../document-expression-set';
  *   size, this dependency is not tracked here.
  */
 export class ExpressionReverseDependencies {
-  lastExpressionString: string;
+  lastExpressionSourceCode: string;
   reverseDependencies: DocumentExpressionSet = new DocumentExpressionSet();
 
   constructor(lastExpressionString: string) {
-    this.lastExpressionString = lastExpressionString;
+    this.lastExpressionSourceCode = lastExpressionString;
   }
 
   /**
@@ -22,7 +22,7 @@ export class ExpressionReverseDependencies {
    */
   toWebBuiltIns() {
     return Object.freeze({
-      lastExpressionString: this.lastExpressionString,
+      lastExpressionString: this.lastExpressionSourceCode,
       reverseDependencies: this.reverseDependencies.toWebBuiltIns(),
     });
   }
@@ -34,7 +34,7 @@ export class ExpressionReverseDependencies {
    */
   toStringifiable() {
     return Object.freeze({
-      lastExpressionString: this.lastExpressionString,
+      lastExpressionString: this.lastExpressionSourceCode,
       reverseDependencies: this.reverseDependencies.toStringifiable(),
     });
   }

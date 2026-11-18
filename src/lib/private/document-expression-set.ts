@@ -1,19 +1,20 @@
-import { calculateAttrXPath } from './xpath-helpers';
+import type { HashableAttributeCalculationDefinition } from '../api/internal/document-referenced-elements';
 
 /**
  * Stores a set of expressions in a Calculable SVG document that can be
  * evaluated (or, recalculated)
  */
 export class DocumentExpressionSet {
-  private readonly expressionAttrs: Set<Attr> = new Set();
+  private readonly attributeCalculations: Set<HashableAttributeCalculationDefinition> =
+    new Set();
   private readonly constantNames: Set<string> = new Set();
 
-  addExpresionAttr(value: Attr): void {
-    this.expressionAttrs.add(value);
+  addAttributeCalculation(value: HashableAttributeCalculationDefinition): void {
+    this.attributeCalculations.add(value);
   }
 
-  getExpressionAttrs(): Iterable<Attr> {
-    return this.expressionAttrs;
+  getAttributeCalculations(): Iterable<HashableAttributeCalculationDefinition> {
+    return this.attributeCalculations;
   }
 
   addConstant(constantName: string): void {
@@ -25,11 +26,11 @@ export class DocumentExpressionSet {
   }
 
   get isEmpty(): boolean {
-    return this.expressionAttrs.size < 1 && this.constantNames.size < 1;
+    return this.attributeCalculations.size < 1 && this.constantNames.size < 1;
   }
 
   clear(): void {
-    this.expressionAttrs.clear();
+    this.attributeCalculations.clear();
     this.constantNames.clear();
   }
 
@@ -39,7 +40,9 @@ export class DocumentExpressionSet {
    */
   toWebBuiltIns() {
     return Object.freeze({
-      expressionAttrs: new Set(this.expressionAttrs),
+      expressionAttrs: Array.from(this.attributeCalculations).map((c) =>
+        c.toWebBuiltIns(),
+      ),
       constantNames: new Set(this.constantNames),
     });
   }
@@ -51,7 +54,9 @@ export class DocumentExpressionSet {
    */
   toStringifiable() {
     return Object.freeze({
-      expressionAttrs: Array.from(this.expressionAttrs).map(calculateAttrXPath),
+      expressionAttrs: Array.from(this.attributeCalculations).map((c) =>
+        c.toStringifiable(),
+      ),
       constantNames: Array.from(this.constantNames),
     });
   }

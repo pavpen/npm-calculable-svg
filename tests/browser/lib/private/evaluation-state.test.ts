@@ -75,14 +75,14 @@ describe(`${CsvgDocument.name}`, async () => {
 
       // Verify:
       expect(startReverseDependencies).toEqual({
-        attributeToReverseDependencies: {},
+        attributeCalculationToReverseDependencies: {},
         constNameToReverseDependencies: {},
         elementToReverseDependencies: {},
       });
       expect(constResult).toEqual(144);
 
       expect(endReverseDependencies).toEqual({
-        attributeToReverseDependencies: {},
+        attributeCalculationToReverseDependencies: {},
         constNameToReverseDependencies: {
           leaf: {
             lastExpressionString: '12',

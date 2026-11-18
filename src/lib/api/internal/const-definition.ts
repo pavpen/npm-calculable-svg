@@ -1,3 +1,4 @@
+import type { JinjaEvaluationState } from '../../private/jinja-evaluation-state';
 import {
   calculateAttrXPath,
   calculateElementXPath,
@@ -7,31 +8,25 @@ import {
   InternalInterpreterError,
   InvalidConstantExpressionError,
 } from '../faults';
+import {
+  type AttrCalculationExpression,
+  type CalculationExpression,
+  calculation_expression,
+  type ElementCalculationExpression,
+} from './calculation-expression';
 import type { DocumentEvaluationInformation } from './document-evaluation-information';
 
 /**
- * Stores information about where as what a CSVG constant was defined
+ * Stores information about where, and as what expression a CSVG constant was
+ * defined
  *
- * ⚠️ This type is for package internal, and debug use.  It's API is not
- * stable, even across minor release versions.  Avoid use in production code.
+ * > [!WARNING]
+ * > This type is for package internal, and debug use.  It's API is not
+ * > stable, even across minor release versions.  Avoid use in production code.
  *
  * @internal;
  */
 export interface ConstDefinition {
-  /**
-   * The `<csvg:const/>` `Element` where the constant was defined, or
-   * undefined, if the constant wasn't defined in an Element (but, e.g. in
-   * an attribute)
-   */
-  readonly definitionElement: Element | undefined;
-
-  /**
-   * The XML `Attr` where the constant value expression was defined,
-   * or undefined, if the constant expression wasn't defined in an attribute
-   * (but, e.g. in an `Element`)
-   */
-  readonly expressionAttribute: Attr | undefined;
-
   /**
    * The XML `Attr` where the constant name was defined, or undefined,
    * if the constant name wasn't defined in an attribute
@@ -40,7 +35,9 @@ export interface ConstDefinition {
 
   readonly name: string;
 
-  readonly expressionString: string;
+  readonly expression: CalculationExpression;
+
+  evaluate(jinjaEvaluationState: JinjaEvaluationState): unknown;
 
   getDefinitionXPath(): string;
 }
@@ -58,26 +55,29 @@ export namespace const_definition {
     );
   };
 
-  export const fromElement = (
+  export const fromJinjaElement = (
     element: Element,
     evaluationInformation: DocumentEvaluationInformation,
   ): ConstDefinition => {
-    return ElementConstDefinition.fromElement(element, evaluationInformation);
+    return JinjaElementConstDefinition.fromElement(
+      element,
+      evaluationInformation,
+    );
   };
 
-  export const fromExpressionAttribute = (
+  export const fromJinjaAttr = (
     attribute: Attr,
     evaluationInformation: DocumentEvaluationInformation,
   ): ConstDefinition => {
-    return AttributeConstDefinition.fromExpressionAttribute(
+    return JinjaAttrConstDefinition.fromExpressionAttribute(
       attribute,
       evaluationInformation,
     );
   };
 }
 
-class ElementConstDefinition implements ConstDefinition {
-  readonly definitionElement: Element;
+class JinjaElementConstDefinition implements ConstDefinition {
+  readonly expression: ElementCalculationExpression;
   readonly name: string;
 
   static getNameFromDefinitionElement(
@@ -101,8 +101,8 @@ class ElementConstDefinition implements ConstDefinition {
   static fromElement(
     element: Element,
     evaluationInformation: DocumentEvaluationInformation,
-  ): ElementConstDefinition {
-    const constName = ElementConstDefinition.getNameFromDefinitionElement(
+  ): JinjaElementConstDefinition {
+    const constName = JinjaElementConstDefinition.getNameFromDefinitionElement(
       element,
       evaluationInformation,
     );
@@ -116,12 +116,12 @@ ${JSON.stringify(csvg_xml.elements.csvg_const.attributes.const_name.namespaceUri
       );
     }
 
-    return new ElementConstDefinition(constName, element);
+    return new JinjaElementConstDefinition(constName, element);
   }
 
   constructor(name: string, definitionElement: Element) {
     this.name = name;
-    this.definitionElement = definitionElement;
+    this.expression = calculation_expression.forJinjaElement(definitionElement);
   }
 
   get expressionAttribute(): Attr | undefined {
@@ -132,27 +132,27 @@ ${JSON.stringify(csvg_xml.elements.csvg_const.attributes.const_name.namespaceUri
     return undefined;
   }
 
-  get expressionString(): string {
-    return this.definitionElement.textContent;
+  evaluate(jinjaEvaluationState: JinjaEvaluationState): unknown {
+    return this.expression.evaluateStringExpression(jinjaEvaluationState);
   }
 
   getDefinitionXPath(): string {
-    return calculateElementXPath(this.definitionElement);
+    return calculateElementXPath(this.expression.sourceElement);
   }
 }
 
 /**
  * @internal
  */
-export class AttributeConstDefinition implements ConstDefinition {
-  readonly expressionAttribute: Attr;
+export class JinjaAttrConstDefinition implements ConstDefinition {
+  readonly expression: AttrCalculationExpression;
   readonly constNameAttribute: Attr | undefined;
   readonly name: string;
 
   static fromExpressionAttribute(
     expressionAttribute: Attr,
     evaluationInformation: DocumentEvaluationInformation,
-  ): AttributeConstDefinition {
+  ): JinjaAttrConstDefinition {
     const ownerElement = expressionAttribute.ownerElement;
 
     if (!ownerElement) {
@@ -175,7 +175,7 @@ export class AttributeConstDefinition implements ConstDefinition {
       }
     }
 
-    return new AttributeConstDefinition(
+    return new JinjaAttrConstDefinition(
       constName,
       expressionAttribute,
       constNameAttribute,
@@ -188,7 +188,7 @@ export class AttributeConstDefinition implements ConstDefinition {
     constNameAttribute: Attr | undefined,
   ) {
     this.name = name;
-    this.expressionAttribute = expressionAttribute;
+    this.expression = calculation_expression.forJinjaAttr(expressionAttribute);
     this.constNameAttribute = constNameAttribute;
   }
 
@@ -196,11 +196,11 @@ export class AttributeConstDefinition implements ConstDefinition {
     return undefined;
   }
 
-  get expressionString(): string {
-    return this.expressionAttribute.value;
+  evaluate(jinjaEvaluationState: JinjaEvaluationState): unknown {
+    return this.expression.evaluateStringExpression(jinjaEvaluationState);
   }
 
   getDefinitionXPath(): string {
-    return calculateAttrXPath(this.expressionAttribute);
+    return calculateAttrXPath(this.expression.sourceAttr);
   }
 }

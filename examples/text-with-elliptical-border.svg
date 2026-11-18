@@ -18,7 +18,7 @@
         are not stable, yet.  We manually calculate the stroke bounding box above.
     -->
     <title>The text 'The unfortunate label' inside an ellipse</title>
-    <!-- Adding the following script renders calculables in this document: -->
+    <!-- Adding the following script renders CSVG calculations in this document: -->
     <script crossorigin="anonymous" href="../evaluate-for-current-document-debug.js"></script>
     <style>
         .label {

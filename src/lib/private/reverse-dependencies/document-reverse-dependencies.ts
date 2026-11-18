@@ -1,8 +1,11 @@
 import { CsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
 import { InternalInterpreterError } from '../../api/faults';
-import type { DocumentReferencedElements } from '../../api/internal/document-referenced-elements';
-import { calculateAttrXPath, calculateElementXPath } from '../xpath-helpers';
+import type {
+  DocumentReferencedElements,
+  HashableAttributeCalculationDefinition,
+} from '../../api/internal/document-referenced-elements';
+import { calculateElementXPath } from '../xpath-helpers';
 import type { ElementReverseDependencies } from './element-reverse-dependencies';
 import type { ExpressionReverseDependencies } from './expression-reverse-dependencies';
 import type { InvalidatedCalculables } from './invalidated-calculables';
@@ -17,8 +20,8 @@ export class DocumentReverseDependencies {
     string,
     ExpressionReverseDependencies
   > = new Map();
-  readonly attributeToReverseDependencies: Map<
-    Attr,
+  readonly attributeCalculationToReverseDependencies: Map<
+    HashableAttributeCalculationDefinition,
     ExpressionReverseDependencies
   > = new Map();
   private readonly documentReferencedElements: DocumentReferencedElements;
@@ -32,7 +35,7 @@ export class DocumentReverseDependencies {
   clear(): void {
     this.elementToReverseDependencies.clear();
     this.constNameToReverseDependencies.clear();
-    this.attributeToReverseDependencies.clear();
+    this.attributeCalculationToReverseDependencies.clear();
   }
 
   collectCalculablesDirectlyInvalidatedByStyle(
@@ -40,7 +43,7 @@ export class DocumentReverseDependencies {
   ): void {
     const {
       constantNames: outputInvalidatedConstantNames,
-      expressionAttrs: outputInvalidatedExpressionAttrs,
+      attributeCalculations: outputInvalidatedExpressionAttrs,
       elements: outputInvalidatedElements,
     } = outputInvalidatedCalculables;
 
@@ -54,7 +57,7 @@ export class DocumentReverseDependencies {
         for (const constName of reverseDependencies.bboxReverseDependencies.getConstantNames()) {
           outputInvalidatedConstantNames.add(constName);
         }
-        for (const attr of reverseDependencies.bboxReverseDependencies.getExpressionAttrs()) {
+        for (const attr of reverseDependencies.bboxReverseDependencies.getAttributeCalculations()) {
           outputInvalidatedExpressionAttrs.add(attr);
         }
       }
@@ -67,7 +70,7 @@ export class DocumentReverseDependencies {
         for (const constName of reverseDependencies.boundingClientRectReverseDependencies.getConstantNames()) {
           outputInvalidatedConstantNames.add(constName);
         }
-        for (const attr of reverseDependencies.boundingClientRectReverseDependencies.getExpressionAttrs()) {
+        for (const attr of reverseDependencies.boundingClientRectReverseDependencies.getAttributeCalculations()) {
           outputInvalidatedExpressionAttrs.add(attr);
         }
       }
@@ -87,7 +90,7 @@ export class DocumentReverseDependencies {
           for (const constName of usedStyleReverseDependencies.reverseDependencies.getConstantNames()) {
             outputInvalidatedConstantNames.add(constName);
           }
-          for (const attr of usedStyleReverseDependencies.reverseDependencies.getExpressionAttrs()) {
+          for (const attr of usedStyleReverseDependencies.reverseDependencies.getAttributeCalculations()) {
             outputInvalidatedExpressionAttrs.add(attr);
           }
         }
@@ -108,33 +111,35 @@ export class DocumentReverseDependencies {
     outputInvalidatedCalculables: InvalidatedCalculables,
   ): void {
     const {
-      expressionAttrs: outputInvalidatedExpressionAttrs,
+      attributeCalculations: outputInvalidatedAttributeCalculations,
       constantNames: outputInvalidatedConstantNames,
       elements: outputInvalidatedElements,
     } = outputInvalidatedCalculables;
 
-    const fringeAttrs: Set<Attr> = new Set(outputInvalidatedExpressionAttrs);
+    const fringeAttrCalculations: Set<HashableAttributeCalculationDefinition> =
+      new Set(outputInvalidatedAttributeCalculations);
     const fringeConstNames: Set<string> = new Set(
       outputInvalidatedConstantNames,
     );
-    const nextFringeAttrs: Set<Attr> = new Set();
+    const nextFringeAttrCalculations: Set<HashableAttributeCalculationDefinition> =
+      new Set();
     const nextFringeConstNames: Set<string> = new Set();
 
-    while (fringeAttrs.size > 0 || fringeConstNames.size > 0) {
-      // Expand the next level of trasitive dependencies into
+    while (fringeAttrCalculations.size > 0 || fringeConstNames.size > 0) {
+      // Expand the next level of transitive dependencies into
       // `nextFringeAttrs`, and `nextFringeConstNames`:
-      nextFringeAttrs.clear();
+      nextFringeAttrCalculations.clear();
       nextFringeConstNames.clear();
 
-      for (const attr of fringeAttrs) {
+      for (const attr of fringeAttrCalculations) {
         const reverseDependencies =
-          this.attributeToReverseDependencies.get(attr);
+          this.attributeCalculationToReverseDependencies.get(attr);
         if (typeof reverseDependencies === 'undefined') {
           continue;
         }
 
-        for (const transitiveAttr of reverseDependencies.reverseDependencies.getExpressionAttrs()) {
-          nextFringeAttrs.add(transitiveAttr);
+        for (const transitiveAttrCalculation of reverseDependencies.reverseDependencies.getAttributeCalculations()) {
+          nextFringeAttrCalculations.add(transitiveAttrCalculation);
         }
         for (const transitiveConstName of reverseDependencies.reverseDependencies.getConstantNames()) {
           nextFringeConstNames.add(transitiveConstName);
@@ -148,8 +153,8 @@ export class DocumentReverseDependencies {
           continue;
         }
 
-        for (const transitiveAttr of reverseDependencies.reverseDependencies.getExpressionAttrs()) {
-          nextFringeAttrs.add(transitiveAttr);
+        for (const transitiveAttr of reverseDependencies.reverseDependencies.getAttributeCalculations()) {
+          nextFringeAttrCalculations.add(transitiveAttr);
         }
         for (const transitiveConstName of reverseDependencies.reverseDependencies.getConstantNames()) {
           nextFringeConstNames.add(transitiveConstName);
@@ -157,17 +162,17 @@ export class DocumentReverseDependencies {
       }
 
       // Visit the fringe:
-      fringeAttrs.clear();
+      fringeAttrCalculations.clear();
       fringeConstNames.clear();
 
-      for (const attr of nextFringeAttrs) {
-        const element = attr.ownerElement;
+      for (const attrCalculation of nextFringeAttrCalculations) {
+        const element = attrCalculation.sourceAttr.ownerElement;
         if (element !== null) {
           outputInvalidatedElements.add(element);
         }
-        if (!outputInvalidatedExpressionAttrs.has(attr)) {
-          outputInvalidatedExpressionAttrs.add(attr);
-          fringeAttrs.add(attr);
+        if (!outputInvalidatedAttributeCalculations.has(attrCalculation)) {
+          outputInvalidatedAttributeCalculations.add(attrCalculation);
+          fringeAttrCalculations.add(attrCalculation);
         }
       }
       for (const constName of nextFringeConstNames) {
@@ -188,7 +193,7 @@ export class DocumentReverseDependencies {
       if (typeof referencedElement === 'undefined') {
         continue;
       }
-      for (const referencedDescendent of referencedElement.closestDescendents) {
+      for (const referencedDescendent of referencedElement.closestDescendants) {
         elementSet.add(referencedDescendent.element);
       }
     }
@@ -310,14 +315,12 @@ document re-calculation.',
           ],
         ),
       ),
-      attributeToReverseDependencies: new Map(
-        Array.from(this.attributeToReverseDependencies.entries()).map(
-          ([attribute, reverseDependencies]) => [
-            attribute,
-            reverseDependencies.toWebBuiltIns(),
-          ],
-        ),
-      ),
+      attributeCalculationToReverseDependencies: Array.from(
+        this.attributeCalculationToReverseDependencies.entries(),
+      ).map(([attributeCalculation, reverseDependencies]) => [
+        attributeCalculation.toWebBuiltIns(),
+        reverseDependencies.toWebBuiltIns(),
+      ]),
     });
   }
 
@@ -344,13 +347,13 @@ document re-calculation.',
           ],
         ),
       ),
-      attributeToReverseDependencies: new Map(
-        Array.from(this.attributeToReverseDependencies.entries()).map(
-          ([attribute, reverseDependencies]) => [
-            calculateAttrXPath(attribute),
-            reverseDependencies.toStringifiable(),
-          ],
-        ),
+      attributeCalculationToReverseDependencies: new Map(
+        Array.from(
+          this.attributeCalculationToReverseDependencies.entries(),
+        ).map(([attributeCalculation, reverseDependencies]) => [
+          attributeCalculation.toStringifiable(),
+          reverseDependencies.toStringifiable(),
+        ]),
       ),
     });
   }

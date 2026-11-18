@@ -29,7 +29,7 @@ export class DocumentEvaluationInformation {
   private static attributeValidCharSetRegEx =
     /^[a-zA-Z_-][a-zA-Z0-9._-]*:?[a-zA-Z0-9._-]*$/;
 
-  private defaultXmlNamespaceUri: string | null = null;
+  defaultNamespaceUri: string | null = null;
   /** Used by {@link getAttrNamespaceUri} */
   private readonly xmlNamePrefixToNamespaceUri: Map<string, string> = new Map();
 
@@ -41,7 +41,7 @@ export class DocumentEvaluationInformation {
     new DocumentReferencedElements(this);
 
   calculateForSvgElement(svgElement: SVGSVGElement): void {
-    this.defaultXmlNamespaceUri = null;
+    this.defaultNamespaceUri = null;
     this.xmlNamePrefixToNamespaceUri.clear();
     this.collectXmlNsPrefixes(svgElement);
 
@@ -54,12 +54,9 @@ export class DocumentEvaluationInformation {
   }
 
   private collectXmlNsPrefixes(svgElement: SVGElement) {
-    for (const attribute of svgElement.attributes) {
-      if (attribute.name === 'xmlns') {
-        this.defaultXmlNamespaceUri = attribute.value;
-        continue;
-      }
+    this.defaultNamespaceUri = svgElement.namespaceURI;
 
+    for (const attribute of svgElement.attributes) {
       const prefix = 'xmlns:';
 
       if (attribute.name.startsWith(prefix)) {
@@ -85,17 +82,26 @@ export class DocumentEvaluationInformation {
     );
   }
 
+  /**
+   * Resolves an XML attribute, or element name prefix to a namespace URI
+   *
+   * @param xmlNamePrefix the XML name prefix to resolve
+   * @param defaultValue the default XML namespace, returned if {@link xmlNamePrefix} in `null`.  If {@link defaultValue} is `undefined`, the root SVG element's namespace URI is used.
+   * @returns the resolved namespace URI, or `null`, if no namespace URI is defined for the given name prefix, or {@link xmlNamePrefix} is `null`, and the default namespace URI is also `null`
+   */
   getNamespaceUriForNamePrefix(
     xmlNamePrefix: string | null,
-    defaultValue: string | null = null,
+    defaultValue: string | null | undefined = undefined,
   ): string | null {
     if (xmlNamePrefix === null) {
-      return defaultValue;
+      return typeof defaultValue === 'undefined'
+        ? this.defaultNamespaceUri
+        : defaultValue;
     }
 
     const result = this.xmlNamePrefixToNamespaceUri.get(xmlNamePrefix);
 
-    return typeof result === 'undefined' ? defaultValue : result;
+    return typeof result === 'undefined' ? null : result;
   }
 
   getAttrLocalName(attribute: Attr): string {
@@ -132,7 +138,7 @@ export class DocumentEvaluationInformation {
   getElementNamespaceUri(element: Element): string | null {
     return this.getNamespaceUriForNamePrefix(
       xmlQualifiedNameGetPrefix(element.tagName),
-      this.defaultXmlNamespaceUri,
+      this.defaultNamespaceUri,
     );
   }
 
@@ -141,7 +147,7 @@ export class DocumentEvaluationInformation {
   }
 
   /**
-   * Builds the `docLocalIdToNode`
+   * Builds the {@link docLocalIdToElement}, and {@link constNameToDefinition}
    */
   private processSvgElement(element: Element): void {
     const treeWalker = element.ownerDocument.createTreeWalker(
@@ -160,14 +166,14 @@ export class DocumentEvaluationInformation {
           csvg_xml.attributes.constant_expression.jinja.namespaceUri
         ) {
           this.addConstDefinition(
-            const_definition.fromExpressionAttribute(attribute, this),
+            const_definition.fromJinjaAttr(attribute, this),
           );
         }
       }
 
       if (const_definition.isConstDefinitionElement(currentElement, this)) {
         this.addConstDefinition(
-          const_definition.fromElement(currentElement, this),
+          const_definition.fromJinjaElement(currentElement, this),
         );
       }
     } while (treeWalker.nextNode());

@@ -27,21 +27,21 @@ const calculateParentElementXPath = (element: Element): string => {
     return '/';
   }
 
-  const elementTagName = element.tagName.toLocaleLowerCase();
+  const elementTagName = element.tagName;
   let sameTagSiblingCount = 0;
   let sameTagSiblingIndex: number | undefined;
   for (const node of parentNode.children) {
-    if (node.tagName.toLocaleLowerCase() !== elementTagName) {
+    if (node.tagName !== elementTagName) {
       continue;
     }
-    ++sameTagSiblingCount;
     if (node === element) {
       sameTagSiblingIndex = sameTagSiblingCount;
     }
+    ++sameTagSiblingCount;
   }
   if (sameTagSiblingCount > 1) {
     if (typeof sameTagSiblingIndex !== 'number') {
-      throw new Error(`Element not found amoung the children of its parent!`);
+      throw new Error(`Element not found among the children of its parent!`);
     }
     return `${calculateParentElementXPath(parentNode as Element)}/${element.tagName}[${sameTagSiblingIndex + 1}]`;
   } else {

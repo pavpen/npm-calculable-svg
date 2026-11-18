@@ -13,7 +13,7 @@ export class CalculableSvgError extends Error {
 export class InvalidStringValueError extends CalculableSvgError {
   readonly value: string | null;
   readonly allowedValues: Iterable<string | null> | undefined;
-  readonly allowedValuesDescirption: string | undefined;
+  readonly allowedValuesDescription: string | undefined;
 
   constructor(
     message: string,
@@ -30,12 +30,12 @@ export class InvalidStringValueError extends CalculableSvgError {
     super(message);
     this.value = value;
     this.allowedValues = allowedValues;
-    this.allowedValuesDescirption = allowedValuesDescription;
+    this.allowedValuesDescription = allowedValuesDescription;
   }
 }
 
 export class InvalidAttributeValueError extends InvalidStringValueError {
-  readonly attributename: string;
+  readonly attributeName: string;
   readonly namespaceUri: string | undefined;
 
   constructor({
@@ -65,7 +65,7 @@ ${allowedValuesMessage}`,
       { value, allowedValues, allowedValuesDescription },
     );
 
-    this.attributename = attributeName;
+    this.attributeName = attributeName;
     this.namespaceUri = namespaceUri;
   }
 }
@@ -151,7 +151,7 @@ ${causeMessage}`,
 }
 
 export class CircularAttributeSettingExpressionError extends InvalidAttributeExpressionError {
-  readonly dependencyChain: Attr[];
+  readonly dependencyChain: Array<string | object>;
 
   constructor({
     expressionString,
@@ -161,7 +161,7 @@ export class CircularAttributeSettingExpressionError extends InvalidAttributeExp
   }: {
     expressionString: string;
     expressionDefinitionAttribute: Attr;
-    dependencyChain: Attr[];
+    dependencyChain: Array<string | object>;
     cause?: Error | undefined;
   }) {
     super({ expressionString, expressionDefinitionAttribute, cause });
@@ -171,7 +171,7 @@ export class CircularAttributeSettingExpressionError extends InvalidAttributeExp
   toString(): string {
     const causeMessage = this.cause ? `\nCaused by: ${this.cause}` : '';
 
-    return `Expression circular dependency chain: ${this.dependencyChain.map(calculateAttrXPath).join(' -> ')}\
+    return `Expression circular dependency chain: ${this.dependencyChain.map((e) => e.toString()).join(' -> ')}\
 ${causeMessage}`;
   }
 }

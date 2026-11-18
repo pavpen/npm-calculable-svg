@@ -105,6 +105,9 @@ example are calculated from the text bounding box.
   to Calculable SVG, may not be appropriate in environments, such as Markdown
   on the Web, where you may not have a fully programmable Web page rendering
   framework.)
+* Paint paths, and text on a
+  [`Canvas`](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+  element.
 
 ## The Features
 
