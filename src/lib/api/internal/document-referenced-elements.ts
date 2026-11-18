@@ -1,7 +1,19 @@
-import { calculateElementXPath } from '../../private/xpath-helpers';
+import {
+  calculateAttrXPath,
+  calculateElementXPath,
+} from '../../private/xpath-helpers';
 import { csvg_xml } from '../../xml-api';
-import { InternalInterpreterError } from '../faults';
-import type { DocumentEvaluationInformation } from './document-evaluation-information';
+import {
+  InternalInterpreterError,
+  InvalidAttributeValueError,
+} from '../faults';
+import { AttributeCalculationDefinition } from './attribute-calculation-definition';
+import { calculation_expression } from './calculation-expression';
+import {
+  type DocumentEvaluationInformation,
+  xmlQualifiedNameGetLocalName,
+  xmlQualifiedNameGetPrefix,
+} from './document-evaluation-information';
 
 /**
  * Debug representation of a CSVG referenced element
@@ -13,8 +25,41 @@ import type { DocumentEvaluationInformation } from './document-evaluation-inform
  */
 export type ReferencedElementJsRepr = {
   element: Element;
-  closestDescendents: Array<ReferencedElementJsRepr>;
+  closestDescendants: Array<ReferencedElementJsRepr>;
 };
+
+type ModulePrivateMarker = never;
+
+/**
+ * Like {@link AttributeCalculationDefinition}, but restricted to one instance
+ * per DOM `Attr`, so that it can be inserted in primitive structures like
+ * `Map`, and `Set`
+ *
+ * > [!WARNING]
+ * > This type is for package internal, and debug use.  It's API is not
+ * > stable, even across minor release versions.  Avoid use in production code.
+ *
+ * @internal
+ */
+export abstract class HashableAttributeCalculationDefinition extends AttributeCalculationDefinition {
+  abstract instantiateInModuleOnly(
+    modulePrivateMarker: ModulePrivateMarker,
+    dontCall: never,
+  ): void;
+}
+
+/**
+ * Module-private, so we can ensure this class is instantiated only in this
+ * module, and, at most, once per DOM `Attr`
+ */
+class HashableAttributeCalculationDefinitionImpl extends HashableAttributeCalculationDefinition {
+  instantiateInModuleOnly(
+    _modulePrivateMarker: ModulePrivateMarker,
+    _dontCall: never,
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+}
 
 /**
  * Represents an element tree similar to the DOM tree, but with elements not
@@ -34,16 +79,26 @@ export type ReferencedElementJsRepr = {
  */
 export class ReferencedElement {
   closestAntecedent: ReferencedElement | null = null;
-  readonly closestDescendents: Set<ReferencedElement> = new Set();
-  readonly jinjaExpressionAttributes: Set<Attr>;
+  readonly closestDescendants: Set<ReferencedElement> = new Set();
+  readonly attrNamespaceUriToLocalNameToCalculation: Map<
+    string,
+    Map<string, HashableAttributeCalculationDefinition>
+  > = new Map();
   readonly element: Element;
 
   constructor({
     element,
-    jinjaExpressionAttributes,
-  }: { element: Element; jinjaExpressionAttributes: Iterable<Attr> }) {
+    attributeNamespaceUriToLocalNameToCalculation,
+  }: {
+    element: Element;
+    attributeNamespaceUriToLocalNameToCalculation: Map<
+      string,
+      Map<string, HashableAttributeCalculationDefinition>
+    >;
+  }) {
     this.element = element;
-    this.jinjaExpressionAttributes = new Set(jinjaExpressionAttributes);
+    this.attrNamespaceUriToLocalNameToCalculation =
+      attributeNamespaceUriToLocalNameToCalculation;
   }
 
   /**
@@ -53,7 +108,7 @@ export class ReferencedElement {
   toWebBuiltIns(): ReferencedElementJsRepr {
     return Object.freeze({
       element: this.element,
-      closestDescendents: Array.from(this.closestDescendents).map((node) =>
+      closestDescendants: Array.from(this.closestDescendants).map((node) =>
         node.toWebBuiltIns(),
       ),
     });
@@ -137,18 +192,138 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
 
   private collectElementExpressionAttributes(
     element: Element,
-    outputJinjaExpressionAttributes: Attr[],
-  ): void {
+  ): Map<string, Map<string, HashableAttributeCalculationDefinition>> {
     const evaluationInformation = this.documentEvaluationInformation;
+    const definitionNameToAttributeCalculationArguments: Map<
+      string,
+      {
+        jinjaExpressionAttr: Attr | undefined;
+        outputNameAttr: Attr | undefined;
+      }
+    > = new Map();
+    const outputNamespaceUriToLocalNameToCalculation: Map<
+      string,
+      Map<string, HashableAttributeCalculationDefinition>
+    > = new Map();
 
     for (const attribute of element.attributes) {
+      const namespaceUri = evaluationInformation.getAttrNamespaceUri(attribute);
       if (
-        evaluationInformation.getAttrNamespaceUri(attribute) ===
+        namespaceUri ===
         csvg_xml.attributes.attribute_expression.jinja.namespaceUri
       ) {
-        outputJinjaExpressionAttributes.push(attribute);
+        const localName = evaluationInformation.getAttrLocalName(attribute);
+        let slot = definitionNameToAttributeCalculationArguments.get(localName);
+        if (typeof slot === 'undefined') {
+          slot = { jinjaExpressionAttr: attribute, outputNameAttr: undefined };
+          definitionNameToAttributeCalculationArguments.set(localName, slot);
+        } else {
+          if (typeof slot.jinjaExpressionAttr !== 'undefined') {
+            console.error(
+              `Multiple attributes with expressions for the same calculated \
+attribute calculation!  Ignoring all but the first expression attribute.`,
+              {
+                element,
+                definitionName: localName,
+                previousDefinitionAttributeName: slot.jinjaExpressionAttr.name,
+                previousDefinitionAttributeValue:
+                  slot.jinjaExpressionAttr.value,
+                ignoredDefinitionAttributeName: attribute.name,
+                ignoredDefinitionAttributeValue: attribute.value,
+              },
+            );
+          } else {
+            slot.jinjaExpressionAttr = attribute;
+          }
+        }
+      } else if (
+        namespaceUri ===
+        csvg_xml.attributes.attribute_expression.output_attribute_name
+          .namespaceUri
+      ) {
+        const localName = evaluationInformation.getAttrLocalName(attribute);
+        let slot = definitionNameToAttributeCalculationArguments.get(localName);
+        if (typeof slot === 'undefined') {
+          slot = { jinjaExpressionAttr: undefined, outputNameAttr: attribute };
+          definitionNameToAttributeCalculationArguments.set(localName, slot);
+        } else {
+          if (typeof slot.outputNameAttr !== 'undefined') {
+            console.error(
+              `Multiple attributes defining the output attribute name for \
+the same calculated attribute!  Ignoring all but the first output name \
+attribute.`,
+              {
+                element,
+                definitionName: localName,
+                previousOutputNameAttributeName: slot.outputNameAttr.name,
+                previousOutputNameAttributeValue: slot.outputNameAttr.value,
+                ignoredOutputNameAttributeName: attribute.name,
+                ignoredOutputNameAttributeValue: attribute.value,
+              },
+            );
+          } else {
+            slot.outputNameAttr = attribute;
+          }
+        }
       }
     }
+
+    for (const [
+      definitionName,
+      { jinjaExpressionAttr, outputNameAttr },
+    ] of definitionNameToAttributeCalculationArguments.entries()) {
+      const outputAttributeName = outputNameAttr?.value ?? definitionName;
+      const namespaceUri = evaluationInformation.getNamespaceUriForNamePrefix(
+        xmlQualifiedNameGetPrefix(outputAttributeName),
+      );
+      if (namespaceUri === null) {
+        const jinjaExpressionAttrMessage =
+          typeof jinjaExpressionAttr === 'undefined'
+            ? 'No jinjaExpressionAttr'
+            : `Path to jinjaExpressionAttr: ${calculateAttrXPath(jinjaExpressionAttr)}`;
+        const outputNameAttrMessage =
+          typeof outputNameAttr === 'undefined'
+            ? 'no outputNameAttr'
+            : `path to outputNameAttr: ${calculateAttrXPath(outputNameAttr)}`;
+        throw new InternalInterpreterError(
+          `Failed to calculate default namespaceURI for Calculable SVG \
+attribute!  ${jinjaExpressionAttrMessage}, ${outputNameAttrMessage}`,
+        );
+      }
+      let outputSlot =
+        outputNamespaceUriToLocalNameToCalculation.get(namespaceUri);
+      if (typeof outputSlot === 'undefined') {
+        outputSlot = new Map();
+        outputNamespaceUriToLocalNameToCalculation.set(
+          namespaceUri,
+          outputSlot,
+        );
+      }
+      if (typeof jinjaExpressionAttr === 'undefined') {
+        console.assert(
+          typeof outputNameAttr !== 'undefined',
+          `A slot for AttributeCalculationExpression construction arguments \
+was created with no recorded expression arguments!`,
+          { element, jinjaExpressionAttr, outputNameAttr },
+        );
+        console.warn(
+          `Element has an attribute expression output attribute name, but \
+no corresponding expression!`,
+          { element, definitionName, outputNameAttr },
+        );
+      } else {
+        outputSlot.set(
+          xmlQualifiedNameGetLocalName(outputAttributeName),
+          new HashableAttributeCalculationDefinitionImpl(
+            calculation_expression.forJinjaAttr(jinjaExpressionAttr),
+            evaluationInformation,
+            outputNameAttr,
+          ),
+        );
+      }
+    }
+
+    return outputNamespaceUriToLocalNameToCalculation;
   }
 
   insertElementReference(element: Element): ReferencedElement {
@@ -157,29 +332,27 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
       return existingReferencedElement;
     }
 
-    const jinjaExpressionAttributes: Attr[] = [];
-    this.collectElementExpressionAttributes(element, jinjaExpressionAttributes);
-
     const referencedElement = new ReferencedElement({
       element,
-      jinjaExpressionAttributes,
+      attributeNamespaceUriToLocalNameToCalculation:
+        this.collectElementExpressionAttributes(element),
     });
 
     const antecedent = this.findNearestReferencedAntecedent(element);
-    let descendents: Iterable<ReferencedElement>;
+    let descendants: Iterable<ReferencedElement>;
 
     if (typeof antecedent === 'undefined') {
-      descendents = this.rootReferencedElements();
+      descendants = this.rootReferencedElements();
     } else {
-      descendents = antecedent.closestDescendents.values();
+      descendants = antecedent.closestDescendants.values();
     }
-    for (const descendent of descendents) {
+    for (const descendent of descendants) {
       if (
         this.findNearestReferencedAntecedent(descendent.element)?.element ===
         element
       ) {
         descendent.closestAntecedent = referencedElement;
-        referencedElement.closestDescendents.add(descendent);
+        referencedElement.closestDescendants.add(descendent);
       }
     }
 
@@ -187,7 +360,7 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
       this.addRootReferencedElement(referencedElement);
     } else {
       referencedElement.closestAntecedent = antecedent;
-      antecedent.closestDescendents.add(referencedElement);
+      antecedent.closestDescendants.add(referencedElement);
     }
 
     this.addReferencedElement(referencedElement);
@@ -208,17 +381,13 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
     );
     do {
       const currentElement = treeWalker.currentNode as Element;
-      const jinjaExpressionAttributes: Attr[] = [];
+      const attributeNamespaceUriToLocalNameToCalculation =
+        this.collectElementExpressionAttributes(currentElement);
 
-      this.collectElementExpressionAttributes(
-        currentElement,
-        jinjaExpressionAttributes,
-      );
-
-      if (jinjaExpressionAttributes.length > 0) {
+      if (attributeNamespaceUriToLocalNameToCalculation.size > 0) {
         const referencedElement = new ReferencedElement({
           element: currentElement,
-          jinjaExpressionAttributes,
+          attributeNamespaceUriToLocalNameToCalculation,
         });
         this.addReferencedElement(referencedElement);
       }
@@ -247,11 +416,49 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
 
       if (typeof antecedent !== 'undefined') {
         referencedElement.closestAntecedent = antecedent;
-        antecedent.closestDescendents.add(referencedElement);
+        antecedent.closestDescendants.add(referencedElement);
       } else {
         this.addRootReferencedElement(referencedElement);
       }
     }
+  }
+
+  getAttributeCalculationDefinitionForExpressionAttr(
+    expressionSourceAttr: Attr,
+  ): HashableAttributeCalculationDefinition | undefined {
+    const ownerElement = expressionSourceAttr.ownerElement;
+
+    if (!ownerElement) {
+      return undefined;
+    }
+    const referencedElement = this.getReferencedElement(ownerElement);
+
+    if (!referencedElement) {
+      return undefined;
+    }
+
+    const namespaceUri =
+      this.documentEvaluationInformation.getAttrNamespaceUri(
+        expressionSourceAttr,
+      );
+    if (namespaceUri === null) {
+      throw new InvalidAttributeValueError({
+        attributeName: expressionSourceAttr.name,
+        namespaceUri: undefined,
+        value: expressionSourceAttr.value,
+        allowedValuesDescription:
+          'the namespace URI of the attribute must be defined for attributes \
+defining attribute calculation expressions',
+      });
+    }
+
+    return referencedElement.attrNamespaceUriToLocalNameToCalculation
+      .get(namespaceUri)
+      ?.get(
+        this.documentEvaluationInformation.getAttrLocalName(
+          expressionSourceAttr,
+        ),
+      );
   }
 
   /**
@@ -271,7 +478,7 @@ parent: ${calculateElementXPath(referencedElement.closestAntecedent.element)}`,
       .map(
         (referencedElement) =>
           `${calculateElementXPath(referencedElement.element)}: \
-${JSON.stringify(Array.from(referencedElement.closestDescendents.values()).map((re) => calculateElementXPath(re.element)))}`,
+${JSON.stringify(Array.from(referencedElement.closestDescendants.values()).map((re) => calculateElementXPath(re.element)))}`,
       )
       .join('\n');
   }

@@ -4,14 +4,13 @@ import {
   CircularAttributeSettingExpressionError,
   CircularConstantDefinitionError,
   InternalInterpreterError,
-  InvalidAttributeExpressionError,
   InvalidExpressionError,
-  InvalidStringValueError,
   UndefinedConstantError,
 } from '../api/faults';
-import { DocumentEvaluationInformation } from '../api/internal/document-evaluation-information';
+import type { DocumentEvaluationInformation } from '../api/internal/document-evaluation-information';
+import type { HashableAttributeCalculationDefinition } from '../api/internal/document-referenced-elements';
 import { CsvgGlobalNamespaceForEvaluation } from '../expression-api/impl/csvg-global-namespace-for-evaluation';
-import { csvg_xml } from '../xml-api';
+import type { JinjaEvaluationState } from './jinja-evaluation-state';
 import type { JinjaEvaluationScope, JinjaEvaluator } from './jinja-evaluator';
 import { DocumentReverseDependencies } from './reverse-dependencies/document-reverse-dependencies';
 import {
@@ -22,22 +21,27 @@ import { ExpressionReverseDependencies } from './reverse-dependencies/expression
 import type { InvalidatedCalculables } from './reverse-dependencies/invalidated-calculables';
 import { calculateAttrXPath, calculateElementXPath } from './xpath-helpers';
 
-export class EvaluationState {
+export class EvaluationState implements JinjaEvaluationState {
   readonly documentEvaluationInformation: DocumentEvaluationInformation;
   readonly jinjaGlobalScope: JinjaEvaluationScope;
   readonly jinjaEvaluator: JinjaEvaluator;
   readonly reverseDependencies: DocumentReverseDependencies;
 
   /**
-   * Expression attributes that are disallowed in subsequent expressions
+   * Expression attribute calculations that are disallowed in subsequent
+   * expressions
    *
    * This is used to detect circular dependencies.  During the evaluation of
    * an expression attribute, subsequent expressions are disallowed from
-   * requesting the value of this attribute.
+   * requesting the calculation of any of these attribute.  When the
+   * evaluation of an attribute expression completes, requesting the
+   * calculation of this attribute is allowed again.
    */
-  readonly disallowedExpressionAttributes: Set<Attr> = new Set();
+  readonly disallowedAttributeCalculations: Set<HashableAttributeCalculationDefinition> =
+    new Set();
 
-  readonly renderedAttributes: Set<Attr> = new Set();
+  readonly calculatedAttributeDefinitions: Set<HashableAttributeCalculationDefinition> =
+    new Set();
 
   /**
    * Attributes that are disregarded as dependencies when evaluating
@@ -72,9 +76,11 @@ export class EvaluationState {
    *
    * Each element is either:
    * * A constant name (string), on
-   * * An expression `Attr`
+   * * A `HashableAttributeCalculationDefinition`
    */
-  protected readonly expressionsUnderEvaluation: Array<string | Attr> = [];
+  protected readonly expressionsUnderEvaluation: Array<
+    string | HashableAttributeCalculationDefinition
+  > = [];
 
   constructor({
     documentEvaluationInformation,
@@ -92,7 +98,9 @@ export class EvaluationState {
     });
   }
 
-  private getCurrentExpressionUnderEvaluationOrThrow(): string | Attr {
+  private getCurrentExpressionUnderEvaluationOrThrow():
+    | string
+    | HashableAttributeCalculationDefinition {
     const elementCount = this.expressionsUnderEvaluation.length;
 
     if (elementCount < 1) {
@@ -126,7 +134,9 @@ evaluating an expression!`,
         slot.bboxReverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.bboxReverseDependencies.addExpresionAttr(dependentExpression);
+        slot.bboxReverseDependencies.addAttributeCalculation(
+          dependentExpression,
+        );
         break;
       default:
         throw new InternalInterpreterError(
@@ -157,7 +167,7 @@ evaluating an expression!`,
         );
         break;
       case 'object':
-        slot.boundingClientRectReverseDependencies.addExpresionAttr(
+        slot.boundingClientRectReverseDependencies.addAttributeCalculation(
           dependentExpression,
         );
         break;
@@ -205,7 +215,7 @@ evaluating an expression!`,
         pseudoElementSlot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        pseudoElementSlot.reverseDependencies.addExpresionAttr(
+        pseudoElementSlot.reverseDependencies.addAttributeCalculation(
           dependentExpression,
         );
         break;
@@ -218,7 +228,7 @@ evaluating an expression!`,
 
   private addLastExpressionDependencyOnConst(
     constName: string,
-    expressionString: string,
+    expressionSourceCode: string,
   ): void {
     const dependentExpression = this.expressionsUnderEvaluation.at(-1);
 
@@ -231,18 +241,18 @@ evaluating an expression!`,
       this.reverseDependencies.constNameToReverseDependencies.get(constName);
 
     if (typeof slot === 'undefined') {
-      slot = new ExpressionReverseDependencies(expressionString);
+      slot = new ExpressionReverseDependencies(expressionSourceCode);
       this.reverseDependencies.constNameToReverseDependencies.set(
         constName,
         slot,
       );
     } else {
-      if (slot.lastExpressionString !== expressionString) {
+      if (slot.lastExpressionSourceCode !== expressionSourceCode) {
         throw new InternalInterpreterError(
           `Expression string for csvgConst changed during \
 document evaluation!  Constant name: ${JSON.stringify(constName)} \
-previous expresison string: ${JSON.stringify(slot.lastExpressionString)}, \
-current expression string: ${JSON.stringify(expressionString)}.`,
+previous expression source code: ${JSON.stringify(slot.lastExpressionSourceCode)}, \
+current expression source code: ${JSON.stringify(expressionSourceCode)}.`,
         );
       }
     }
@@ -252,7 +262,7 @@ current expression string: ${JSON.stringify(expressionString)}.`,
         slot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.reverseDependencies.addExpresionAttr(dependentExpression);
+        slot.reverseDependencies.addAttributeCalculation(dependentExpression);
         break;
       default:
         throw new InternalInterpreterError(
@@ -261,9 +271,8 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     }
   }
 
-  private addLastExpressionDependencyOnExpressionAttribute(
-    expressionAttribute: Attr,
-    expressionString: string,
+  private addLastExpressionDependencyOnAttributeCalculation(
+    attributeCalculationDefinition: HashableAttributeCalculationDefinition,
   ): void {
     const dependentExpression =
       this.expressionsUnderEvaluation[
@@ -276,23 +285,26 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     }
 
     let slot =
-      this.reverseDependencies.attributeToReverseDependencies.get(
-        expressionAttribute,
+      this.reverseDependencies.attributeCalculationToReverseDependencies.get(
+        attributeCalculationDefinition,
       );
 
     if (typeof slot === 'undefined') {
-      slot = new ExpressionReverseDependencies(expressionString);
-      this.reverseDependencies.attributeToReverseDependencies.set(
-        expressionAttribute,
+      slot = new ExpressionReverseDependencies(
+        attributeCalculationDefinition.sourceCode,
+      );
+      this.reverseDependencies.attributeCalculationToReverseDependencies.set(
+        attributeCalculationDefinition,
         slot,
       );
     } else {
-      if (slot.lastExpressionString !== expressionString) {
+      const sourceCode = attributeCalculationDefinition.sourceCode;
+      if (slot.lastExpressionSourceCode !== sourceCode) {
         throw new InternalInterpreterError(
-          `Expression string for Attribute Expression changed during \
-document evaluation!  Attribute: ${calculateAttrXPath(expressionAttribute)} \
-previous expresison string: ${JSON.stringify(slot.lastExpressionString)}, \
-current expression string: ${JSON.stringify(expressionString)}.`,
+          `Expression string for Attribute Calculation changed during \
+document evaluation!  Attribute Calculation: \
+${JSON.stringify(attributeCalculationDefinition.toStringifiable())} previous \
+last expression source code: ${JSON.stringify(slot.lastExpressionSourceCode)}.`,
         );
       }
     }
@@ -302,7 +314,9 @@ current expression string: ${JSON.stringify(expressionString)}.`,
         slot.reverseDependencies.addConstant(dependentExpression);
         break;
       case 'object':
-        slot.reverseDependencies.addExpresionAttr(dependentExpression);
+        slot.reverseDependencies.addAttributeCalculation(
+          attributeCalculationDefinition,
+        );
         break;
       default:
         throw new InternalInterpreterError(
@@ -317,119 +331,95 @@ current expression string: ${JSON.stringify(expressionString)}.`,
     );
   }
 
-  invalidateAttributeExpression(expressionSource: Attr): void {
-    this.renderedAttributes.delete(expressionSource);
-    this.reverseDependencies.attributeToReverseDependencies.delete(
-      expressionSource,
+  invalidateAttributeCalculation(
+    calculationDefinition: HashableAttributeCalculationDefinition,
+  ): void {
+    this.calculatedAttributeDefinitions.delete(calculationDefinition);
+    this.reverseDependencies.attributeCalculationToReverseDependencies.delete(
+      calculationDefinition,
     );
   }
 
-  renderJinjaExpressionAttribute(expressionSource: Attr): void {
-    const {
-      disallowedExpressionAttributes,
-      renderedAttributes,
-      jinjaGlobalScope,
-      jinjaEvaluator,
-    } = this;
-    const statementString = expressionSource.value;
+  invalidateAttributeWithExpressionAttr(expressionSource: Attr): void {
+    const calculationDefinition =
+      this.documentEvaluationInformation.documentReferencedElements.getAttributeCalculationDefinitionForExpressionAttr(
+        expressionSource,
+      );
 
-    if (disallowedExpressionAttributes.has(expressionSource)) {
+    if (!calculationDefinition) {
+      console.error(
+        'An attribute defining an attribute calculation expression must \
+have a recorded HashableAttributeCalculationDefinition!',
+        { expressionSource, calculationDefinition },
+      );
+      return;
+    }
+
+    this.invalidateAttributeCalculation(calculationDefinition);
+  }
+
+  renderCalculatedAttribute(
+    calculationDefinition: HashableAttributeCalculationDefinition,
+  ): void {
+    const { disallowedAttributeCalculations, calculatedAttributeDefinitions } =
+      this;
+    const { sourceCode, sourceAttr } = calculationDefinition;
+
+    if (disallowedAttributeCalculations.has(calculationDefinition)) {
       throw new CircularAttributeSettingExpressionError({
-        expressionString: statementString,
-        expressionDefinitionAttribute: expressionSource,
-        dependencyChain: Array.from(disallowedExpressionAttributes.values()),
+        expressionString: sourceCode,
+        expressionDefinitionAttribute: sourceAttr,
+        dependencyChain: Array.from(this.expressionsUnderEvaluation),
       });
     }
 
-    this.addLastExpressionDependencyOnExpressionAttribute(
-      expressionSource,
-      statementString,
+    this.addLastExpressionDependencyOnAttributeCalculation(
+      calculationDefinition,
     );
 
-    if (statementString === null) {
+    if (sourceCode === null) {
       console.debug(
-        `Skipping null expression attribute: ${calculateAttrXPath(expressionSource)}`,
+        `Skipping null expression attribute: ${calculateAttrXPath(sourceAttr)}`,
       );
 
       return;
     }
 
-    if (renderedAttributes.has(expressionSource)) {
+    if (calculatedAttributeDefinitions.has(calculationDefinition)) {
       console.debug(
-        `Skipping already-rendered attribute: ${calculateAttrXPath(expressionSource)}`,
+        `Skipping already-rendered attribute: ${calculateAttrXPath(sourceAttr)}`,
       );
 
       return;
     }
 
-    const ownerElement = expressionSource.ownerElement;
+    const ownerElement = sourceAttr.ownerElement;
     if (ownerElement === null) {
       throw new InternalInterpreterError(
         `Can't render an attribute expression for attribute that's not part of \
-an element!  Attribute name: ${JSON.stringify(expressionSource.name)}, \
-expression: ${JSON.stringify(statementString)}`,
+an element!  Attribute name: ${JSON.stringify(sourceAttr.name)}, \
+expression: ${JSON.stringify(sourceCode)}`,
       );
     }
 
-    const expressionAttributeLocalName =
-      this.documentEvaluationInformation.getAttrLocalName(expressionSource);
-    const outputNameAttribute =
-      this.documentEvaluationInformation.elementGetAttributeNodeNS(
-        ownerElement,
-        csvg_xml.attributes.attribute_expression.output_attribute_name
-          .namespaceUri,
-        expressionAttributeLocalName,
-      );
     const outputAttributeQualifiedName =
-      outputNameAttribute === null
-        ? this.documentEvaluationInformation.getAttrLocalName(expressionSource)
-        : outputNameAttribute.value;
-    if (
-      !this.documentEvaluationInformation.isValidOutputAttributeQualifiedName(
-        outputAttributeQualifiedName,
-      )
-    ) {
-      const cause = new InvalidStringValueError(
-        'Invalid output attribute qualified name!',
-        {
-          allowedValuesDescription:
-            DocumentEvaluationInformation.attributeValidOutputQualifiedNameDescription,
-          value: statementString,
-        },
+      calculationDefinition.getOutputAttrName(
+        this.documentEvaluationInformation,
       );
-      throw new InvalidAttributeExpressionError({
-        expressionString: statementString,
-        expressionDefinitionAttribute: expressionSource,
-        cause,
-      });
-    }
-    const valueExpressionString = expressionSource.value;
 
-    disallowedExpressionAttributes.add(expressionSource);
-    this.expressionsUnderEvaluation.push(expressionSource);
+    disallowedAttributeCalculations.add(calculationDefinition);
+    this.expressionsUnderEvaluation.push(calculationDefinition);
 
-    let renderResult: string;
-    try {
-      renderResult = jinjaEvaluator.renderTemplateString(
-        valueExpressionString,
-        jinjaGlobalScope,
-      );
-    } catch (e) {
-      throw new InvalidAttributeExpressionError({
-        expressionString: valueExpressionString,
-        expressionDefinitionAttribute: expressionSource,
-        cause: e as Error,
-      });
-    }
-    const expressionValue = renderResult;
+    const expressionValue =
+      calculationDefinition.evaluateStringExpression(this);
 
-    if (this.expressionsUnderEvaluation.pop() !== expressionSource) {
+    if (this.expressionsUnderEvaluation.pop() !== calculationDefinition) {
       throw new InternalInterpreterError(
-        `Currupt 'expressionsUnderEvaluationStack'!  Calling \
+        `Corrupt 'expressionsUnderEvaluationStack'!  Calling \
 'evaluateJinjaTemplate' resulted in a modified stack!`,
       );
     }
-    disallowedExpressionAttributes.delete(expressionSource);
+    disallowedAttributeCalculations.delete(calculationDefinition);
 
     // Avoid triggering `MutationObserver` updates:
     const skipDomUpdate =
@@ -440,17 +430,17 @@ expression: ${JSON.stringify(statementString)}`,
     }
 
     console.debug('Rendered Jinja expression attribute.', {
-      expressionAttribute: expressionSource,
+      expressionAttribute: calculationDefinition,
       outputAttributeQualifiedName,
       value: expressionValue,
       skippingDomUpdateWhichIsNoOp: skipDomUpdate,
       reverseDependencies:
-        this.reverseDependencies.attributeToReverseDependencies
-          .get(expressionSource)
+        this.reverseDependencies.attributeCalculationToReverseDependencies
+          .get(calculationDefinition)
           ?.toWebBuiltIns(),
     });
 
-    renderedAttributes.add(expressionSource);
+    calculatedAttributeDefinitions.add(calculationDefinition);
   }
 
   invalidateElement(element: Element): void {
@@ -482,14 +472,16 @@ expression: ${JSON.stringify(statementString)}`,
         );
     }
 
-    // Render descendents, which may affect this element:
-    for (const nearestDescendent of referencedElement.closestDescendents.values()) {
+    // Render descendants, which may affect this element:
+    for (const nearestDescendent of referencedElement.closestDescendants.values()) {
       this.renderElement(nearestDescendent.element);
     }
 
     // Render attribute expressions:
-    for (const attribute of referencedElement.jinjaExpressionAttributes) {
-      this.renderJinjaExpressionAttribute(attribute);
+    for (const attrLocalNameToCalculation of referencedElement.attrNamespaceUriToLocalNameToCalculation.values()) {
+      for (const attrCalculation of attrLocalNameToCalculation.values()) {
+        this.renderCalculatedAttribute(attrCalculation);
+      }
     }
 
     console.debug('Rendered element.', {
@@ -525,9 +517,9 @@ expression: ${JSON.stringify(statementString)}`,
       });
     }
 
-    const expressionString = definition.expressionString;
+    const sourceCode = definition.expression.sourceCode;
 
-    this.addLastExpressionDependencyOnConst(constName, expressionString);
+    this.addLastExpressionDependencyOnConst(constName, sourceCode);
 
     if (this.constNameToValue.has(constName)) {
       const result = this.constNameToValue.get(constName);
@@ -543,10 +535,7 @@ expression: ${JSON.stringify(statementString)}`,
 
     let expressionValue: unknown;
     try {
-      expressionValue = this.jinjaEvaluator.eval(
-        expressionString,
-        this.jinjaGlobalScope,
-      );
+      expressionValue = definition.evaluate(this);
     } catch (e) {
       if (e instanceof InvalidExpressionError) {
         e.add_note(`While evaluating constant ${JSON.stringify(constName)}`);
@@ -570,7 +559,7 @@ expression: ${JSON.stringify(statementString)}`,
 
     if (this.expressionsUnderEvaluation.pop() !== constName) {
       throw new InternalInterpreterError(
-        `Currupt 'expressionsUnderEvaluationStack'!  Calling \
+        `Corrupt 'expressionsUnderEvaluationStack'!  Calling \
 'evaluateJinjaExpressionString' resulted in a modified stack!`,
       );
     }
@@ -583,8 +572,8 @@ expression: ${JSON.stringify(statementString)}`,
     for (const constName of calculables.constantNames) {
       this.invalidateConst(constName);
     }
-    for (const attr of calculables.expressionAttrs) {
-      this.invalidateAttributeExpression(attr);
+    for (const attrCalculation of calculables.attributeCalculations) {
+      this.invalidateAttributeCalculation(attrCalculation);
     }
     for (const element of calculables.elements) {
       this.invalidateElement(element);
@@ -592,13 +581,17 @@ expression: ${JSON.stringify(statementString)}`,
   }
 
   calculateInvalidatedCalculables(calculables: InvalidatedCalculables): void {
-    for (const attr of calculables.expressionAttrs) {
-      this.renderJinjaExpressionAttribute(attr);
+    // * No need to re-calculate constants explicitly, they're not visible in
+    //   the DOM, only to other expressions.
+    // * No need to re-calculate `Element`s explicitly, either.  They're
+    //   calculated by re-rendering calculated attributes.
+    for (const attrCalculation of calculables.attributeCalculations) {
+      this.renderCalculatedAttribute(attrCalculation);
     }
   }
 
   clearCalculationCache(): void {
-    this.renderedAttributes.clear();
+    this.calculatedAttributeDefinitions.clear();
     this.renderedElements.clear();
     this.constNameToValue.clear();
     this.reverseDependencies.clear();

@@ -1,7 +1,11 @@
 import { CsvgDomRect as JsCsvgDomRect } from '../../api/csvg-dom-rect';
 import { CsvgUsedStyleDimensions as JsCsvgUsedStyleDimensions } from '../../api/csvg-used-style-dimensions';
+import { InvalidExpressionError } from '../../api/faults';
+import {
+  xmlQualifiedNameGetLocalName,
+  xmlQualifiedNameGetPrefix,
+} from '../../api/internal/document-evaluation-information';
 import type { EvaluationState } from '../../private/evaluation-state';
-import { attribute_expression } from '../../private/expression-api/attribute-expression';
 import type { CsvgElement } from '../csvg-element';
 import { CsvgDomRectForEvaluation } from './csvg-dom-rect-for-evaluation';
 import { CsvgUsedStyleDimensionsForEvaluation } from './csvg-used-style-dimensions-for-evaluation';
@@ -19,15 +23,31 @@ export class CsvgElementForEvaluation {
   }
 
   getAttribute(qualifiedName: string): string | null {
-    // Satisfy attribute dependendencies, before reading the attribute value:
-    const expressionAttribute =
-      attribute_expression.expressionAttributeForOutputAttributeQualifiedName(
-        this.element,
-        qualifiedName,
-        this.evaluationState.documentEvaluationInformation,
+    const evaluationInformation =
+      this.evaluationState.documentEvaluationInformation;
+    // Satisfy attribute dependencies, before reading the attribute value:
+    const attrNamePrefix = xmlQualifiedNameGetPrefix(qualifiedName);
+    const attrLocalName = xmlQualifiedNameGetLocalName(qualifiedName);
+    const namespaceUri =
+      evaluationInformation.getNamespaceUriForNamePrefix(attrNamePrefix);
+    if (namespaceUri === null) {
+      throw new InvalidExpressionError(
+        `getAttribute qualifiedName argument \
+(${JSON.stringify(qualifiedName)}) references an undefined XML namespace \
+prefix: ${JSON.stringify(attrNamePrefix)}`,
+        {},
       );
-    if (expressionAttribute !== null) {
-      this.evaluationState.renderJinjaExpressionAttribute(expressionAttribute);
+    }
+    const referencedElement =
+      this.evaluationState.documentEvaluationInformation.getReferencedElement(
+        this.element,
+      );
+    const expressionAttribute =
+      referencedElement?.attrNamespaceUriToLocalNameToCalculation
+        .get(namespaceUri)
+        ?.get(attrLocalName);
+    if (typeof expressionAttribute !== 'undefined') {
+      this.evaluationState.renderCalculatedAttribute(expressionAttribute);
     }
 
     return this.element.getAttribute(qualifiedName);
